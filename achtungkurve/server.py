@@ -13,7 +13,7 @@ class GameProtocol(asyncio.Protocol):
         self.transport: asyncio.Transport = None
         self.player: Player = None
 
-    def send_data(self, data: str):
+    def send_data(self, data: dict):
         self.transport.write(json.dumps(data).encode("UTF-8"))
 
     def connection_made(self, transport: asyncio.Transport):
@@ -48,7 +48,7 @@ def start_tron_server(tron_game: TronGame):
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
-    tron = TronGame(num_players=2, board_size=lambda: random.randint(10, 15),
-                    timeout=10, polling_rate=0.5, verbose=True)
+    tron = TronGame(num_players=1, board_size=lambda: random.randint(10, 15),
+                    timeout=10, polling_rate=2, verbose=True)
 
     start_tron_server(tron)
