@@ -165,7 +165,8 @@ class TronGame:
                     self._update_board()
 
                     if self.verbose:
-                        print(np.rot90(self.board))
+                        # quick way to get a better board view
+                        print(str(np.rot90(self.board)).replace('0', '-'))
                         print()
 
                     self._broadcast_state()
