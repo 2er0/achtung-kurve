@@ -1,4 +1,5 @@
 import asyncio
+import json
 import random
 import time
 
@@ -12,15 +13,20 @@ class AgentProtocol(asyncio.Protocol):
         self.loop = loop
         self.transport = None
 
+    def send_data(self, data: dict):
+        self.transport.write(json.dumps(data).encode("UTF-8"))
+
     def connection_made(self, transport):
         self.transport = transport
 
     def data_received(self, data):
-        print('Data received: {!r}'.format(data.decode()))
-        time.sleep(random.uniform(1, 5))
-        msg = self.agent.next_move(data.decode())
-        print("sending", msg)
-        self.transport.write(msg.encode("UTF-8"))
+        received = json.loads(data.decode())
+        #print('Data received: {!r}'.format(received))
+        #time.sleep(random.uniform(0, 1))
+        msg = self.agent.next_move(received)
+
+        if msg:
+            self.transport.write(json.dumps(msg).encode("UTF-8"))
 
     def connection_lost(self, exc):
         print('The server closed the connection')
