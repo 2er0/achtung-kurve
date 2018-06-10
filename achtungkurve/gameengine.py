@@ -201,12 +201,12 @@ class TronGame:
         self.board[:, -1] = BoardSquare.wall
 
         start_positions = (2, 2), (-3, -3), (2, -3), (-3, 2)
-        start_headings = [BoardSquare.opponent_south, BoardSquare.opponent_north,
-                          BoardSquare.opponent_west, BoardSquare.opponent_east]
+        start_headings = [BoardSquare.opponent_north, BoardSquare.opponent_south,
+                          BoardSquare.opponent_east, BoardSquare.opponent_west]
 
         for position, heading, player in zip(start_positions, start_headings, self.players):
             self.board[position] = heading
-            player.heading = heading - 4  # todo
+            player.heading = heading - 5  # todo
             player.x, player.y = position
             player.alive = True
             player.moved = False
