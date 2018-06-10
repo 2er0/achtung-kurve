@@ -31,12 +31,8 @@ class GameProtocol(asyncio.Protocol):
         asyncio.ensure_future(self.player.receive_message(json.loads(data.decode("UTF-8"))))
 
 
-if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    tron = TronGame(num_players=2, board_size=lambda: random.randint(10, 15),
-                    timeout=10, polling_rate=0.5, verbose=False)
-
-    server = loop.run_until_complete(loop.create_server(lambda: GameProtocol(tron), 'localhost', SERVER_PORT))
+def start_tron_server(tron_game: TronGame):
+    server = loop.run_until_complete(loop.create_server(lambda: GameProtocol(tron_game), 'localhost', SERVER_PORT))
 
     print('Serving on {}'.format(server.sockets[0].getsockname()))
 
@@ -48,3 +44,11 @@ if __name__ == "__main__":
     server.close()
     loop.run_until_complete(server.wait_closed())
     loop.close()
+
+
+if __name__ == "__main__":
+    loop = asyncio.get_event_loop()
+    tron = TronGame(num_players=2, board_size=lambda: random.randint(10, 15),
+                    timeout=10, polling_rate=0.5, verbose=True)
+
+    start_tron_server(tron)

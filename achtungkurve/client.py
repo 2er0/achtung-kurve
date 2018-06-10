@@ -1,7 +1,5 @@
 import asyncio
 import json
-import random
-import time
 
 from achtungkurve.agent import Agent, RandomAgent
 from achtungkurve.server import SERVER_PORT
@@ -21,8 +19,8 @@ class AgentProtocol(asyncio.Protocol):
 
     def data_received(self, data):
         received = json.loads(data.decode())
-        #print('Data received: {!r}'.format(received))
-        #time.sleep(random.uniform(0, 1))
+        # print('Data received: {!r}'.format(received))
+        # time.sleep(random.uniform(0, 1))
         msg = self.agent.next_move(received)
 
         if msg:
