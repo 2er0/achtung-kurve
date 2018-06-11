@@ -2,6 +2,7 @@ import asyncio
 import time
 import warnings
 from enum import Enum, IntEnum
+from itertools import permutations
 from typing import Union, Callable, List
 
 import numpy as np
@@ -218,6 +219,8 @@ class TronGame:
                    (self.board == BoardSquare.opponent_south) |
                    (self.board == BoardSquare.opponent_west)] = BoardSquare.wall
 
+        self._check_collisions()
+
         # maps player heading to BoardSquare.opponent_*
         heading_to_opponent = {Heading.north: BoardSquare.opponent_north,
                                Heading.east: BoardSquare.opponent_east,
@@ -234,10 +237,17 @@ class TronGame:
 
             data = {
                 "board": self.board.copy(),
-                "last_alive": sum(p.alive for p in self.players) == 1 and player.alive
+                "last_alive": self._num_alive() == 1 and player.alive
             }
 
             player.send_data(data)
+
+    def _check_collisions(self):
+        for (player1, player2) in permutations(self.players, 2):
+            if player1.x == player2.x and player1.y == player2.y:
+                self.board[player1.x, player1.y] = BoardSquare.wall
+                player1.alive = False
+                player2.alive = False
 
     def _check_alive(self, player: Player) -> bool:
         if not player.alive:
