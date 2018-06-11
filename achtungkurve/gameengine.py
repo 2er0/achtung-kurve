@@ -134,7 +134,7 @@ class TronGame:
         self.round = 0
         self.players: List[Player] = []
         self.board = None
-        self.game_ended = False
+        self.game_over = False
 
     def register_player(self, player: Player):
         self._remove_inactive_players()
@@ -161,7 +161,7 @@ class TronGame:
 
             timeout_start = time.time()
 
-            while not self.game_ended:
+            while not self.game_over:
                 if all(p.moved or not p.alive for p in self.players):
                     self._update_board()
 
@@ -175,12 +175,12 @@ class TronGame:
                     timeout_start = time.time()
 
                 if time.time() - timeout_start > self.timeout:
-                    self.game_ended = True
+                    self.game_over = True
                     warnings.warn("No response from agent, game timed out...")
                     break
 
                 if self._num_alive() < 1:
-                    self.game_ended = True
+                    self.game_over = True
 
                 await asyncio.sleep(self._step_sleep_time)
 
@@ -191,7 +191,7 @@ class TronGame:
         return sum(p.alive and p.playing for p in self.players)
 
     def _reset_game(self):
-        self.game_ended = False
+        self.game_over = False
 
         board_size = self.board_size() if callable(self.board_size) else self.board_size
 
@@ -236,6 +236,7 @@ class TronGame:
             player.moved = False
 
             data = {
+                "game_over": self.game_over,
                 "board": self.board.copy(),
                 "last_alive": self._num_alive() == 1 and player.alive
             }
