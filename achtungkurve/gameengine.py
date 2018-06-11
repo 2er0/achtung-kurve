@@ -2,6 +2,7 @@ import asyncio
 import time
 import warnings
 from enum import Enum, IntEnum
+from itertools import permutations
 from typing import Union, Callable, List
 
 import numpy as np
@@ -68,7 +69,7 @@ class Player:
 
         self.client_callback(data)
 
-    async def receive_message(self, msg: dict):
+    def receive_message(self, msg: dict):
         # updates heading and position
 
         if self.moved:
@@ -133,7 +134,7 @@ class TronGame:
         self.round = 0
         self.players: List[Player] = []
         self.board = None
-        self.game_ended = False
+        self.game_over = False
 
     def register_player(self, player: Player):
         self._remove_inactive_players()
@@ -160,7 +161,7 @@ class TronGame:
 
             timeout_start = time.time()
 
-            while not self.game_ended:
+            while not self.game_over:
                 if all(p.moved or not p.alive for p in self.players):
                     self._update_board()
 
@@ -174,12 +175,12 @@ class TronGame:
                     timeout_start = time.time()
 
                 if time.time() - timeout_start > self.timeout:
-                    self.game_ended = True
+                    self.game_over = True
                     warnings.warn("No response from agent, game timed out...")
                     break
 
                 if self._num_alive() < 1:
-                    self.game_ended = True
+                    self.game_over = True
 
                 await asyncio.sleep(self._step_sleep_time)
 
@@ -190,7 +191,7 @@ class TronGame:
         return sum(p.alive and p.playing for p in self.players)
 
     def _reset_game(self):
-        self.game_ended = False
+        self.game_over = False
 
         board_size = self.board_size() if callable(self.board_size) else self.board_size
 
@@ -218,6 +219,8 @@ class TronGame:
                    (self.board == BoardSquare.opponent_south) |
                    (self.board == BoardSquare.opponent_west)] = BoardSquare.wall
 
+        self._check_collisions()
+
         # maps player heading to BoardSquare.opponent_*
         heading_to_opponent = {Heading.north: BoardSquare.opponent_north,
                                Heading.east: BoardSquare.opponent_east,
@@ -233,11 +236,19 @@ class TronGame:
             player.moved = False
 
             data = {
+                "game_over": self.game_over,
                 "board": self.board.copy(),
-                "last_alive": sum(p.alive for p in self.players) == 1 and player.alive
+                "last_alive": self._num_alive() == 1 and player.alive
             }
 
             player.send_data(data)
+
+    def _check_collisions(self):
+        for (player1, player2) in permutations(self.players, 2):
+            if player1.x == player2.x and player1.y == player2.y:
+                self.board[player1.x, player1.y] = BoardSquare.wall
+                player1.alive = False
+                player2.alive = False
 
     def _check_alive(self, player: Player) -> bool:
         if not player.alive:

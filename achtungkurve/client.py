@@ -18,13 +18,13 @@ class AgentProtocol(asyncio.Protocol):
         self.transport = transport
 
     def data_received(self, data):
-        received = json.loads(data.decode())
-        # print('Data received: {!r}'.format(received))
-        # time.sleep(random.uniform(0, 1))
-        msg = self.agent.next_move(received)
+        split_data = data.decode().split("\0")[:-1]
+        for received_packet in split_data:
+            received = json.loads(received_packet)
+            msg = self.agent.next_move(received)
 
-        if msg:
-            self.transport.write(json.dumps(msg).encode("UTF-8"))
+            if msg:
+                self.transport.write(json.dumps(msg).encode("UTF-8"))
 
     def connection_lost(self, exc):
         print('The server closed the connection')
