@@ -12,3 +12,5 @@ class State:
 # agent actions
 ACTIONS = ["left", "forward", "right"]
 
+# agent actions in numbers
+ACTIONSCALC = [(0, -1), (-1, 0), (0, 1)]

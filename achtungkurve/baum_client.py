@@ -34,10 +34,10 @@ class AgentProtocol(asyncio.Protocol):
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
-    agent = BaumAgent()
+    with BaumAgent() as agent:
 
-    coro = loop.create_connection(lambda: AgentProtocol(agent, loop),
-                                  'localhost', SERVER_PORT)
-    loop.run_until_complete(coro)
-    loop.run_forever()
-    loop.close()
+        coro = loop.create_connection(lambda: AgentProtocol(agent, loop),
+                                      'localhost', SERVER_PORT)
+        loop.run_until_complete(coro)
+        loop.run_forever()
+        loop.close()
