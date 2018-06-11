@@ -69,7 +69,7 @@ class Player:
 
         self.client_callback(data)
 
-    async def receive_message(self, msg: dict):
+    def receive_message(self, msg: dict):
         # updates heading and position
 
         if self.moved:

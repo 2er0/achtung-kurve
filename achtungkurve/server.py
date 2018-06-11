@@ -29,7 +29,7 @@ class GameProtocol(asyncio.Protocol):
         self.player.exit()
 
     def data_received(self, data):
-        asyncio.ensure_future(self.player.receive_message(json.loads(data.decode("UTF-8"))))
+        self.player.receive_message(json.loads(data.decode("UTF-8")))
 
 
 def start_tron_server(tron_game: TronGame):
