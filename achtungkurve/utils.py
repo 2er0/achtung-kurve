@@ -3,7 +3,8 @@ class State:
     position: (1, 2)
     alive: True
     board: [[]]
-    last_alive: True
+    last_alive: False
+    game_over: False
 
     def __init__(self, **entries):
         self.__dict__.update(entries)
