@@ -7,5 +7,8 @@ setup(name='achtungkurve',
       license='MIT',
       packages=find_packages(),
       install_requires=["numpy"],
+	  extras_require={
+		'gpclient': ['deap']
+	  },
       zip_safe=False
       )
