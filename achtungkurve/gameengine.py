@@ -61,7 +61,7 @@ class Player:
 
     def send_data(self, data: dict):
         board = data["board"]
-        board[self.x, self.y] = self.heading
+        board[self.x, self.y] = self.heading + 1
 
         data["position"] = (self.x, self.y)
         data["alive"] = self.alive
@@ -77,9 +77,9 @@ class Player:
 
         direction = Direction(msg["move"])  # convert to enum
 
-        self.moved = True
         self._turn(direction)
         self._take_step_forward()
+        self.moved = True
 
     def _turn(self, direction: Direction):
         direction_int = {
