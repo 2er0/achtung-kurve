@@ -17,11 +17,14 @@ class AgentProtocol(asyncio.Protocol):
     def connection_made(self, transport):
         self.transport = transport
 
+    def process_packet(self, packet):
+        return self.agent.next_move(packet)
+
     def data_received(self, data):
         split_data = data.decode().split("\0")[:-1]
         for received_packet in split_data:
             received = json.loads(received_packet)
-            msg = self.agent.next_move(received)
+            msg = self.process_packet(received)
 
             if msg:
                 self.transport.write(json.dumps(msg).encode("UTF-8"))
