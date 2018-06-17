@@ -2,7 +2,7 @@ import abc
 import random
 import numpy as np
 from typing import Optional
-from utils import State, ACTIONS, ACTIONSCALC
+from utils import State, ACTIONS, ACTIONSCALC, SaveState
 
 import pickle
 import os.path
@@ -15,18 +15,7 @@ class Agent(metaclass=abc.ABCMeta):
         pass
 
 
-class SaveState:
-    board: [[]]
-    action: ""
-    result: True
-
-    def __init__(self, board, action, result):
-        self.board = board
-        self.action = action
-        self.result = result
-
-
-class BaumAgent(Agent):
+class BaumColAgent(Agent):
 
     data = list()
 
@@ -40,8 +29,9 @@ class BaumAgent(Agent):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        with open("baum/data.txt", "wb") as fp:  # Pickling
-            pickle.dump(self.data, fp)
+        return
+        #with open("baum/data.txt", "wb") as fp:  # Pickling
+        #    pickle.dump(self.data, fp)
 
     def next_move(self, state) -> Optional[dict]:
         state = State(**state)
@@ -55,12 +45,21 @@ class BaumAgent(Agent):
 
         board = np.asarray(state.board, dtype=np.int)
         board = np.pad(board, 1, 'constant', constant_values=9)
+        size = board.shape[0]
 
-        x = state.position[0] + 1
+        if state.position[0] < 0:
+            x = abs(state.position[0]) + 1
+            x = size - x
+        else:
+            x = state.position[0] + 1
         xn = x-2
         xp = x+3
 
-        y = state.position[1] + 1
+        if state.position[1] < 0:
+            y = abs(state.position[1]) + 1
+            y = size - y
+        else:
+            y = state.position[1] + 1
         yn = y-2
         yp = y+3
 
