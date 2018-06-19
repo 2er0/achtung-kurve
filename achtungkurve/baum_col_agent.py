@@ -1,11 +1,11 @@
 import abc
 import random
+import time
 import numpy as np
 from typing import Optional
 from utils import State, ACTIONS, ACTIONSCALC, SaveState
 
 import pickle
-import os.path
 
 
 class Agent(metaclass=abc.ABCMeta):
@@ -18,20 +18,19 @@ class Agent(metaclass=abc.ABCMeta):
 class BaumColAgent(Agent):
 
     data = list()
+    id = 0
 
     def __init__(self):
-        if not os.path.isfile("baum/data.txt"):
-            return
-        with open("baum/data.txt", "rb") as fp:  # Unpickling
-            self.data = pickle.load(fp)
+        self.id = time.time()
+        return
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        return
-        #with open("baum/data.txt", "wb") as fp:  # Pickling
-        #    pickle.dump(self.data, fp)
+
+        with open("baum/training/"+str(self.id)+".txt", "wb") as fp:  # Pickling
+            pickle.dump(self.data, fp)
 
     def next_move(self, state) -> Optional[dict]:
         state = State(**state)
@@ -63,18 +62,20 @@ class BaumColAgent(Agent):
         yn = y-2
         yp = y+3
 
-        direction = board[x, y] + 1
+        direction = board[x, y]
         l_board = np.rot90(board[xn:xp, yn:yp], direction)
 
         print(str(l_board).replace('0', '-'))
+
+        for choice in ACTIONS:
+            move = ACTIONSCALC[ACTIONS.index(choice)]
+
+            xt = 2 + move[0]
+            yt = 2 + move[1]
+            new_pos = l_board[xt, yt]
+
+            state = SaveState(l_board, choice, False if new_pos > 0 else True)
+            self.data.append(state)
+
         choice = random.choice(ACTIONS)
-        move = ACTIONSCALC[ACTIONS.index(choice)]
-
-        xt = 2 + move[0]
-        yt = 2 + move[1]
-        new_pos = l_board[xt, yt]
-
-        state = SaveState(l_board, choice, False if new_pos > 0 else True)
-        self.data.append(state)
-
         return {"move": choice}
