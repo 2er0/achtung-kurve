@@ -1,9 +1,12 @@
-from sklearn.datasets import load_iris
-from sklearn.externals import joblib
-from sklearn import tree
+import os
 import pickle
+
 import numpy as np
-from utils import SaveState, ACTIONHOT
+from sklearn import tree
+from sklearn.externals import joblib
+
+from utils import ACTIONHOT
+
 """
 iris = load_iris()
 clf = tree.DecisionTreeClassifier()
@@ -13,24 +16,26 @@ clf = clf.fit(iris.data, iris.target)
 train = []
 labels = []
 
-with open("baum/data.txt", "rb") as fp:  # Unpickling
-    data = pickle.load(fp)
+for filename in os.listdir("baum/training"):
+    with open("baum/training/" + filename, "rb") as fp:  # Unpickling
+        data = pickle.load(fp)
 
-    for cont in data:
-        # cont = SaveState
-        if not cont.result:
-            continue
+        for cont in data:
+            # cont = SaveState
+            if not cont.result:
+                continue
 
-        board = np.asarray(cont.board).flatten()
-        lab = ACTIONHOT[cont.action]
+            board = np.asarray(cont.board).flatten()
+            board = np.where(board > 0, 9, board)
+            lab = ACTIONHOT[cont.action]
 
-        train.append(board)
-        labels.append(lab)
+            train.append(board)
+            labels.append(lab)
 
-clf = tree.DecisionTreeClassifier(criterion="entropy")
+clf = tree.DecisionTreeClassifier()
 clf = clf.fit(train, labels)
 
-joblib.dump(clf, 'baum/dt_2.pkl')
+joblib.dump(clf, 'baum/dt_3.pkl')
 
 # res = clf.predict([train[2]])
 # print(res, labels[2])
