@@ -29,7 +29,9 @@ class BaumMlAgent(Agent):
             folders += len(dir_names)
             break
         self.dir_name = str(folders)
-        os.makedirs("baum/agent/"+self.dir_name)
+
+        if not os.path.exists("baum/agent/"+self.dir_name):
+            os.makedirs("baum/agent/"+self.dir_name)
 
         if not os.path.isfile("baum/dt_3.pkl"):
             exit(1)
@@ -122,6 +124,6 @@ class BaumMlAgent(Agent):
 
     def __save_history(self):
         t = time.time()
-        with open("baum/training/"+self.dir_name+"/"+str(t)+".txt", "wb") as fp:  # Pickling
+        with open("baum/agent/"+self.dir_name+"/"+str(t)+".txt", "wb") as fp:  # Pickling
             pickle.dump(self.history, fp)
         self.history = list()

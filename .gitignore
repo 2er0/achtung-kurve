@@ -1,5 +1,5 @@
 .idea/
-baum/
+#baum/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
