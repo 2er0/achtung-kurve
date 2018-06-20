@@ -201,7 +201,8 @@ class TronGame:
         self.board[:, 0] = BoardSquare.wall
         self.board[:, -1] = BoardSquare.wall
 
-        start_positions = (2, 2), (-3, -3), (2, -3), (-3, 2)
+        start_positions = (2, 2), (board_size - 3, board_size - 3), \
+                          (2, board_size - 3), (board_size - 3, 2)
         start_headings = [BoardSquare.opponent_north, BoardSquare.opponent_south,
                           BoardSquare.opponent_east, BoardSquare.opponent_west]
 
