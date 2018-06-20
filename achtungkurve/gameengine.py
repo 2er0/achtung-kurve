@@ -162,8 +162,15 @@ class TronGame:
             timeout_start = time.time()
 
             while not self.game_over:
+                if time.time() - timeout_start > self.timeout:
+                    self.game_over = True
+                    warnings.warn("No response from agent, game timed out...")
+
                 if all(p.moved or not p.alive for p in self.players):
                     self._update_board()
+
+                    if self._num_alive() < 1:
+                        self.game_over = True
 
                     if self.verbose:
                         # quick way to get a better board view
@@ -174,13 +181,6 @@ class TronGame:
 
                     timeout_start = time.time()
 
-                if time.time() - timeout_start > self.timeout:
-                    self.game_over = True
-                    warnings.warn("No response from agent, game timed out...")
-                    break
-
-                if self._num_alive() < 1:
-                    self.game_over = True
 
                 await asyncio.sleep(self._step_sleep_time)
 
