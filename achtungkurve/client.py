@@ -1,7 +1,7 @@
 import asyncio
 import json
 
-from achtungkurve.agent import Agent, RandomAgent
+from achtungkurve.agent import Agent, RandomAgent, AvoidsWallsAgent
 from achtungkurve.server import SERVER_PORT
 
 
