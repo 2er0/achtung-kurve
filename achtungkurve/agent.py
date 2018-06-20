@@ -40,6 +40,7 @@ class AvoidsWallsAgent(Agent):
 
     def next_move(self, state):
         board = np.array(state["board"])
+        position = tuple(np.array(state["position"]))
 
         if state["last_alive"]:
             print("I won!! :)")
@@ -50,22 +51,43 @@ class AvoidsWallsAgent(Agent):
         if state["game_over"]:
             print("game_over")
 
-        heading = board[tuple(state["position"])]
+        heading = board[position]
 
-        if not self.wall_ahead(board, state["position"], heading):
+        return self.move_forward_if_possible(board, position, heading)
+
+    def move_forward_if_possible(self, board, position, heading):
+        if not self.wall_ahead(board, position, heading, 1):
             return {"move": "forward"}
-        elif not self.wall_left(board, state["position"], heading):
+        elif not self.wall_ahead(board, position, heading, 0):
             return {"move": "left"}
         else:
             return {"move": "right"}
 
-    def wall_ahead(self, board, position, heading) -> bool:
+    def wall_ahead(self, board, position, heading, turn) -> bool:
+        heading = ((heading - 2 + turn) % 4) + 1
         move = self.heading_move[heading]
         new_pos = tuple(sum(a) for a in zip(position, move))
         return board[new_pos] != 0
 
-    def wall_left(self, board, position, heading) -> bool:
-        heading = ((heading - 2) % 4) + 1
-        move = self.heading_move[heading]
-        new_pos = tuple(sum(a) for a in zip(position, move))
-        return board[new_pos] != 0
+
+class AvoidsWallsRandomlyAgent(AvoidsWallsAgent):
+    def next_move(self, state):
+        board = np.array(state["board"])
+        position = tuple(np.array(state["position"]))
+
+        if state["last_alive"]:
+            print("I won!! :)")
+
+        if not state["alive"]:
+            print("I'm dead :(")
+
+        if state["game_over"]:
+            print("game_over")
+
+        heading = board[position]
+        rand_turn = random.randint(0, 2)
+
+        if not self.wall_ahead(board, position, heading, rand_turn):
+            return {"move": self.ACTIONS[rand_turn]}
+
+        return self.move_forward_if_possible(board, position, heading)
