@@ -23,18 +23,18 @@ class TreeAgent(Agent):
         print(state)
         (x, y) = state["position"]
         direction = state["board"][x][y]
-        front_tile = (0, 1) if direction==BoardSquare.player_north else \
+        front_dir = (0, 1) if direction==BoardSquare.player_north else \
                      (1, 0) if direction==BoardSquare.player_east else \
                      (0,-1) if direction==BoardSquare.player_south else \
                      (-1,0) if direction==BoardSquare.player_west else None
-        if front_tile is None:
+        if front_dir is None:
             raise ValueError("got unexpected heading of player")
             
-        left_tile = (-front_tile[1],front_tile[0])
-        right_tile = (front_tile[1],-front_tile[0])
+        left_dir = (-front_dir[1],front_dir[0])
+        right_dir = (front_dir[1],-front_dir[0])
         
-        front_tile = state[x + front_tile[0]][y + front_tile[1]]
-        left_tile = state[x + left_tile[0]][y + left_tile[1]]
-        right_tile = state[x + right_tile[0]][y + right_tile[1]]
+        front_tile = state[x + front_dir[0]][y + front_dir[1]]
+        left_tile = state[x + left_dir[0]][y + left_dir[1]]
+        right_tile = state[x + right_dir[0]][y + right_dir[1]]
         
         return (left_tile, front_tile, right_tile)
