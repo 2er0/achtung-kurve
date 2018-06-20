@@ -17,10 +17,9 @@ class TreeAgent(Agent):
 
         self.tiles_claimed = self.tiles_claimed + 1
         state = self.simplify_state(state)
-        return {"move": self.agent_logic(state)}
+        return {"move": self.agent_logic(*state)}
     
     def simplify_state(self, state):
-        print(state)
         (x, y) = state["position"]
         direction = state["board"][x][y]
         front_dir = (0, 1) if direction==BoardSquare.player_north else \
@@ -33,8 +32,8 @@ class TreeAgent(Agent):
         left_dir = (-front_dir[1],front_dir[0])
         right_dir = (front_dir[1],-front_dir[0])
         
-        front_tile = state[x + front_dir[0]][y + front_dir[1]]
-        left_tile = state[x + left_dir[0]][y + left_dir[1]]
-        right_tile = state[x + right_dir[0]][y + right_dir[1]]
+        front_tile = state["board"][x + front_dir[0]][y + front_dir[1]]
+        left_tile = state["board"][x + left_dir[0]][y + left_dir[1]]
+        right_tile = state["board"][x + right_dir[0]][y + right_dir[1]]
         
         return (left_tile, front_tile, right_tile)

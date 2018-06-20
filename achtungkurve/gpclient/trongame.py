@@ -11,6 +11,7 @@ class TronGame(AgentProtocol):
         self.transport = None
 
     def process_packet(self, packet):
+        print(packet)
         if packet["game_over"]:
             self.loop.stop()
         return self.agent.next_move(packet)

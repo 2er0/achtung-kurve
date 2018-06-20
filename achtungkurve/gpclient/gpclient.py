@@ -58,11 +58,11 @@ if __name__ == "__main__":
     coro = loop.create_connection(lambda: TronGame(agent, loop),
                               'localhost', SERVER_PORT)
     
-    pop = toolbox.population(n=10)
+    pop = toolbox.population(n=1)
     stats = tools.Statistics(lambda ind: ind.fitness.values)
     stats.register("avg", np.mean)
     stats.register("std", np.std)
     stats.register("min", np.min)
     stats.register("max", np.max)
     
-    algorithms.eaSimple(pop, toolbox, 0.5, 0.2, 40, stats, verbose=True)
+    algorithms.eaSimple(pop, toolbox, 0.5, 0.2, 1, stats, verbose=True)
