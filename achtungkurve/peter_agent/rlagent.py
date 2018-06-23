@@ -116,7 +116,9 @@ class TronEnv(Env):
         last_alive = self.state["last_alive"]
         score = 0.1 if alive else -1.  # todo last_alive bonus
 
-        return np.array(board), score, game_over, {}
+        done = game_over or not alive
+
+        return np.array(board), score, done, {}
 
     def reset(self):
         if not self.state:
