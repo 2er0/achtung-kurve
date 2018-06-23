@@ -150,7 +150,7 @@ class TronGame:
         return True
 
     async def _start_game_loop(self):
-        while all(p.playing for p in self.players):
+        while len(self.players) > 0 and all(p.playing for p in self.players):
             self.round += 1
 
             if self.verbose:
@@ -164,7 +164,7 @@ class TronGame:
             while not self.game_over:
                 if time.time() - timeout_start > self.timeout:
                     self.game_over = True
-                    warnings.warn("No response from agent, game timed out...")
+                    print("No response from agent, game timed out...")
 
                 if all(p.moved or not p.alive for p in self.players):
                     self._update_board()
@@ -180,7 +180,6 @@ class TronGame:
                     self._broadcast_state()
 
                     timeout_start = time.time()
-
 
                 await asyncio.sleep(self._step_sleep_time)
 
