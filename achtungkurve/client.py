@@ -1,7 +1,8 @@
 import asyncio
 import json
+import threading
 
-from achtungkurve.agent import Agent, RandomAgent, AvoidsWallsAgent
+from achtungkurve.agent import Agent, RandomAgent, AvoidsWallsAgent, AvoidsWallsRandomlyAgent
 from achtungkurve.server import SERVER_PORT
 
 
@@ -10,6 +11,7 @@ class AgentProtocol(asyncio.Protocol):
         self.agent = agent  # todo able to swap agent without restarting server and reconnecting
         self.loop = loop
         self.transport = None
+        self._lock = threading.Lock()
 
     def send_data(self, data: dict):
         self.transport.write(json.dumps(data).encode("UTF-8"))
@@ -18,13 +20,19 @@ class AgentProtocol(asyncio.Protocol):
         self.transport = transport
 
     def data_received(self, data):
-        split_data = data.decode().split("\0")[:-1]
-        for received_packet in split_data:
-            received = json.loads(received_packet)
-            msg = self.agent.next_move(received)
+        self._lock.acquire()
 
-            if msg:
-                self.transport.write(json.dumps(msg).encode("UTF-8"))
+        try:
+            split_data = data.decode("UTF-8").split("\0")[:-1]
+            for received_packet in split_data:
+                received = json.loads(received_packet)
+                msg = self.agent.next_move(received)
+
+                if received["alive"] and not received["game_over"] and msg:
+                    delimited_json_data = json.dumps(msg) + "\0"
+                    self.transport.write(delimited_json_data.encode("UTF-8"))
+        finally:
+            self._lock.release()
 
     def connection_lost(self, exc):
         print('The server closed the connection')
@@ -34,7 +42,7 @@ class AgentProtocol(asyncio.Protocol):
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
-    agent = RandomAgent()
+    agent = AvoidsWallsRandomlyAgent()
 
     coro = loop.create_connection(lambda: AgentProtocol(agent, loop),
                                   'localhost', SERVER_PORT)
