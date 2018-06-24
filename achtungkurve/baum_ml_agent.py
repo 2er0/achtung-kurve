@@ -20,22 +20,60 @@ class Agent(metaclass=abc.ABCMeta):
 class BaumMlAgent(Agent):
     clf = tree.DecisionTreeClassifier()
     trained = False
+    hist_board = list()
+    hist_labels = list()
     history = list()
+    aktive = 0
+    current = 0
     dir_name = ""
 
     def __init__(self):
+        print("Init client ...")
         folders = 0
         for _, dir_names, _ in os.walk('baum/agent'):
             folders += len(dir_names)
             break
         self.dir_name = str(folders)
 
-        if not os.path.exists("baum/agent/"+self.dir_name):
-            os.makedirs("baum/agent/"+self.dir_name)
+        if not os.path.exists("baum/agent/" + self.dir_name):
+            os.makedirs("baum/agent/" + self.dir_name)
 
+        """
         if not os.path.isfile("baum/dt_3.pkl"):
             exit(1)
+        print("Load base model ...")
         self.clf = joblib.load('baum/dt_3.pkl')
+        """
+
+        print("Load base data for future trainings ...")
+        examples = 10
+        for filename in os.listdir("baum/training"):
+            with open("baum/training/" + filename, "rb") as fp:  # Unpickling
+                data = pickle.load(fp)
+
+                collect = [0, 0, 0]
+
+                for cont in data:
+                    if not cont.result:
+                        continue
+
+                    lab = ACTIONHOT[cont.action]
+                    collect[lab] += 1
+
+                    if collect[lab] < examples:
+                        board = np.asarray(cont.board).flatten()
+                        board = np.where(board > 0, 9, board)
+
+                        self.hist_board.append(board)
+                        self.hist_labels.append(lab)
+
+                    if all(i >= examples for i in collect):
+                        break
+
+        print("Train base model")
+        self.clf = self.clf.fit(self.hist_board, self.hist_labels)
+
+        print("Init done\n=====================\n")
 
     def __enter__(self):
         return self
@@ -49,10 +87,10 @@ class BaumMlAgent(Agent):
 
         if state.last_alive:
             self.trained = False
-            print("I won!! :)")
+            # print("I won!! :)")
 
         if not state.alive:
-            print("I'm dead :(")
+            print(f"I'm dead :( - Version {self.aktive}")
             if not self.trained:
                 print("I'm training ...")
                 self.trained = True
@@ -94,7 +132,7 @@ class BaumMlAgent(Agent):
             yt = 2 + move[1]
             new_pos = l_board[xt, yt]
 
-            state = SaveState(l_board, choice, False if new_pos > 0 else True)
+            state = SaveState(f_board, choice, False if new_pos > 0 else True)
             self.history.append(state)
 
         pred = self.clf.predict([f_board])
@@ -108,22 +146,44 @@ class BaumMlAgent(Agent):
         return {"move": choice}
 
     def __train_tree(self):
-        train = []
-        labels = []
-        for cont in self.history:
+        train_on = 10
+        if len(self.history) > train_on:
+            f = -train_on
+        else:
+            f = 0
+
+        for cont in self.history[f:]:
             if not cont.result:
                 continue
-            board = np.asarray(cont.board).flatten()
-            board = np.where(board > 0, 9, board)
+            # board = np.asarray(cont.board).flatten()
+            # board = np.where(board > 0, 9, board)
             lab = ACTIONHOT[cont.action]
 
-            train.append(board)
-            labels.append(lab)
+            self.hist_board.append(cont.board)
+            self.hist_labels.append(lab)
 
-        self.clf = self.clf.fit(train, labels)
+        clf_new = tree.DecisionTreeClassifier()
+        clf_new = clf_new.fit(self.hist_board, self.hist_labels)
+        self.current += 1
+        clf_old_count = 0
+        clf_new_count = 0
+
+        for test, lab in zip(self.hist_board, self.hist_labels):
+            pred_old = self.clf.predict_proba([test])[0]
+            pred_new = clf_new.predict_proba([test])[0]
+
+            if pred_old[lab] > 0.35:
+                clf_old_count += 1
+            if pred_new[lab] > 0.35:
+                clf_new_count += 1
+
+        print(f"{clf_old_count} vs {clf_new_count} - Version {self.current}")
+        if clf_new_count >= clf_old_count:
+            self.aktive = self.current
+            self.clf = clf_new
 
     def __save_history(self):
         t = time.time()
-        with open("baum/agent/"+self.dir_name+"/"+str(t)+".txt", "wb") as fp:  # Pickling
+        with open("baum/agent/" + self.dir_name + "/" + str(t) + ".txt", "wb") as fp:  # Pickling
             pickle.dump(self.history, fp)
         self.history = list()
