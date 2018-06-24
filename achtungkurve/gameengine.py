@@ -172,7 +172,8 @@ class TronGame:
                 if all(p.moved or not p.alive for p in self.players):
                     self._update_board()
 
-                    if self._num_alive() < 1:
+                    if (len(self.players) == 1 and self._num_alive() < 1) or \
+                            (len(self.players) > 1 and self._num_alive() <= 1):
                         self.game_over = True
 
                     if self.verbose:
