@@ -72,8 +72,11 @@ class Player:
     def receive_message(self, msg: dict):
         # updates heading and position
 
+        if not self.alive:
+            return
+
         if self.moved:
-            raise ValueError("Player tried to move twice")
+            raise ValueError(f"Player at position ({self.x},{self.y}) tried to move twice")
 
         direction = Direction(msg["move"])  # convert to enum
 
