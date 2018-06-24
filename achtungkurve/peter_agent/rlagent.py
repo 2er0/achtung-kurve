@@ -9,7 +9,7 @@ from rl.agents.dqn import DQNAgent
 from rl.callbacks import ModelIntervalCheckpoint, FileLogger
 from rl.core import Processor, Env, Space
 from rl.memory import SequentialMemory
-from rl.policy import LinearAnnealedPolicy, EpsGreedyQPolicy
+from rl.policy import LinearAnnealedPolicy, EpsGreedyQPolicy, BoltzmannQPolicy
 
 from achtungkurve.agent import Agent
 from achtungkurve.client import AgentProtocol
@@ -22,11 +22,8 @@ class TronProcessor(Processor):
         return np.array(observation).astype('uint8')  # saves storage in experience memory
 
     def process_state_batch(self, batch):
-        processed_batch = batch.astype('float32') / 255.
+        processed_batch = batch.astype('float32') / 9.
         return processed_batch
-
-    def process_reward(self, reward):
-        return np.clip(reward, -1., 1.)
 
 
 class QueueAgent(Agent):
@@ -110,15 +107,16 @@ class TronEnv(Env):
         assert self.action_space.contains(action), f"Action {action} {type(action)}) invalid."
         self.state = self.agent.take_action(action)
 
-        board = self.state["board"]
+        board = self._board_from_state()
+
         alive = self.state["alive"]
         game_over = self.state["game_over"]
         last_alive = self.state["last_alive"]
-        score = 0.1 if alive else -1.  # todo last_alive bonus
+        score = 1 if last_alive else 0.1 if alive else -1.
 
         done = game_over or not alive
 
-        return np.array(board), score, done, {}
+        return board, score, done, {}
 
     def reset(self):
         if not self.state:
@@ -127,7 +125,40 @@ class TronEnv(Env):
         while not self.state["alive"]:
             self.state = self.agent.take_action(None)
 
+        return np.array(self._board_from_state())
+
+    def _board_from_state(self):
         return np.array(self.state["board"])
+
+
+class RestrictedViewTronEnv(TronEnv):
+    def __init__(self, agent: QueueAgent, view_distance: int = 1):
+        super().__init__(agent)
+        self.view_distance = view_distance
+
+    def _board_from_state(self):
+        board = np.array(self.state["board"])
+
+        board = np.pad(board, self.view_distance, "constant", constant_values=9)
+        x, y = self.state["position"]
+        x, y = x + self.view_distance, y + self.view_distance  # position moved due to padding
+
+        board = board[
+                x - self.view_distance: x + self.view_distance + 1,
+                y - self.view_distance: y + self.view_distance + 1]
+
+        mid = self.view_distance // 2 + 1
+
+        if board[mid, mid] == 2:
+            board = np.rot90(board, 1)
+        elif board[mid, mid] == 3:
+            board = np.rot90(board, 2)
+        elif board[mid, mid] == 4:
+            board = np.rot90(board, 3)
+
+        board[mid, mid] = 1
+
+        return board
 
 
 def run_agent(agent):
@@ -143,37 +174,32 @@ def run_agent(agent):
     WINDOW_LENGTH = 4
 
     num_actions = 3
-    board_shape = (10, 10)
+    board_shape = (5, 5)
     input_shape = (WINDOW_LENGTH,) + board_shape
 
-    env = TronEnv(agent)
+    env = RestrictedViewTronEnv(agent, 2)
 
     model = Sequential()
 
     model.add(Permute((2, 3, 1), input_shape=input_shape))
 
-    model.add(Conv2D(16, (3, 3), padding="same"))
-    model.add(BatchNormalization())
-    model.add(Activation("relu"))
-    model.add(MaxPooling2D())
-
-    model.add(Conv2D(32, (3, 3), padding="same"))
-    model.add(BatchNormalization())
-    model.add(Activation("relu"))
+    # model.add(Conv2D(64, (3, 3), padding="same"))
+    # model.add(Activation("relu"))
     model.add(Flatten())
 
-    model.add(Dense(512, activation=None))
-    model.add(BatchNormalization())
+    model.add(Dense(32))
     model.add(Activation("relu"))
 
     model.add(Dense(num_actions, activation="linear"))
 
-    policy = LinearAnnealedPolicy(EpsGreedyQPolicy(), attr='eps', value_max=1.,
-                                  value_min=.1, value_test=.0, nb_steps=1000000)
+    np.random.seed(2363)
+
+    policy = LinearAnnealedPolicy(BoltzmannQPolicy(), attr='tau', value_max=10.,
+                                  value_min=.1, value_test=1, nb_steps=1000000 // 10)
 
     processor = TronProcessor()
 
-    memory = SequentialMemory(limit=1000000, window_length=WINDOW_LENGTH)
+    memory = SequentialMemory(limit=1000000 // 10, window_length=WINDOW_LENGTH)
 
     dqn = DQNAgent(model, nb_actions=num_actions, policy=policy, memory=memory, processor=processor,
                    nb_steps_warmup=50000, gamma=.9, target_model_update=10000,
@@ -184,18 +210,25 @@ def run_agent(agent):
     weights_filename = 'tmp/dqn_test_weights.h5f'
     checkpoint_weights_filename = 'tmp/dqn_test_weights_{step}.h5f'
     log_filename = 'tmp/dqn_test_log.json'
-    callbacks = [ModelIntervalCheckpoint(checkpoint_weights_filename, interval=250000)]
+    callbacks = [ModelIntervalCheckpoint(checkpoint_weights_filename, interval=250000 // 10)]
     callbacks += [FileLogger(log_filename, interval=10000)]
 
-    dqn.fit(env, callbacks=callbacks, nb_steps=1750000, log_interval=10000)
+    def train(transfer=False):
+        print(dqn.get_config())  # todo save to file
 
-    dqn.save_weights(weights_filename, overwrite=True)
+        if transfer:
+            dqn.load_weights(weights_filename)
 
-    # Finally, evaluate our algorithm for 10 episodes.
+        dqn.fit(env, callbacks=callbacks, nb_steps=1750000 // 10, log_interval=10000)
+        dqn.save_weights(weights_filename, overwrite=True)
+        dqn.test(env, nb_episodes=20, visualize=True)
 
-    # dqn.load_weights(weights_filename)
+    def opponent():
+        dqn.load_weights('tmp/dqn_test_weights.h5f')
+        dqn.test(env, nb_episodes=200000, visualize=False)
 
-    dqn.test(env, nb_episodes=5, visualize=True)
+    opponent()
+    train(True)
 
 
 if __name__ == "__main__":
