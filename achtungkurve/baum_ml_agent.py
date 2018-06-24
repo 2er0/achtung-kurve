@@ -17,8 +17,14 @@ class Agent(metaclass=abc.ABCMeta):
         pass
 
 
+def _new_Tree():
+    return tree.DecisionTreeClassifier(
+        criterion="entropy", splitter="random"
+    )
+
+
 class BaumMlAgent(Agent):
-    clf = tree.DecisionTreeClassifier()
+    clf = _new_Tree()
     trained = False
     hist_board = list()
     hist_labels = list()
@@ -162,7 +168,7 @@ class BaumMlAgent(Agent):
             self.hist_board.append(cont.board)
             self.hist_labels.append(lab)
 
-        clf_new = tree.DecisionTreeClassifier()
+        clf_new = _new_Tree()
         clf_new = clf_new.fit(self.hist_board, self.hist_labels)
         self.current += 1
         clf_old_count = 0
