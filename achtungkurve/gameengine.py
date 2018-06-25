@@ -112,7 +112,7 @@ class TronGame:
 
     def __init__(self, num_players=4, board_size: Union[Callable[[], int], int] = 30,
                  polling_rate: float = 0., timeout: float = 30.,
-                 verbose: bool = False):
+                 verbose: bool = False, last_player_ends_game: bool = True):
         """Implementation of the Tron Light Cycles game.
 
         :param num_players: Number of players that can connect at once. Limited to 1-4
@@ -124,6 +124,9 @@ class TronGame:
         :param timeout: How long to wait for each Player to move. If the timeout is
         reached, it will stop the round and begin the next one
         :param verbose: Wether to print the game state after each step
+        :param last_player_ends_game: In multiplayer games, controls whether to stop
+            the game when only one player is alive (True) or to keep playing until
+            all players are dead
         """
         if 0 > num_players > 4:
             raise ValueError(f"Only 1-4 players are supported, got {num_players}")
@@ -133,6 +136,7 @@ class TronGame:
         self.board_size = board_size
         self.num_players = num_players
         self.verbose = verbose
+        self.last_player_ends_game = last_player_ends_game
 
         self.round = 0
         self.players: List[Player] = []
@@ -172,8 +176,9 @@ class TronGame:
                 if all(p.moved or not p.alive for p in self.players):
                     self._update_board()
 
-                    if (len(self.players) == 1 and self._num_alive() < 1) or \
-                            (len(self.players) > 1 and self._num_alive() <= 1):
+                    if self._num_alive() < 1 or \
+                            (len(self.players) > 1 and self._num_alive() <= 1 and
+                             self.last_player_ends_game):
                         self.game_over = True
 
                     if self.verbose:
