@@ -8,7 +8,7 @@ setup(name='achtungkurve',
       packages=find_packages(),
       install_requires=["numpy"],
 	  extras_require={
-		'gpclient': ['deap']
+		'gpclient': ['deap', 'dill']
 	  },
       zip_safe=False
       )
