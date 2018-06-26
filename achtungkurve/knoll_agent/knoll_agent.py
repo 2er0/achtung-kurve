@@ -1,5 +1,5 @@
-from achtungkurve.gpclient.trongame import TronGame
-from achtungkurve.gpclient.treeagent import TreeAgent
+from achtungkurve.knoll_agent.trongame import TronGame
+from achtungkurve.knoll_agent.treeagent import TreeAgent
 from achtungkurve.gameengine import Direction, BoardSquare
 from achtungkurve.server import SERVER_PORT
 from functools import partial

@@ -8,7 +8,7 @@ setup(name='achtungkurve',
       packages=find_packages(),
       install_requires=["numpy", "scipy", "scikit-learn", "keras-rl", "keras", "tensorflow-gpu"],
 	  extras_require={
-		'gpclient': ['deap', 'dill']
+		'knoll_agent': ['deap', 'dill']
 	  },
       zip_safe=False
       )
