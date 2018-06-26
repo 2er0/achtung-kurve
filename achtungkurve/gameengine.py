@@ -72,8 +72,11 @@ class Player:
     def receive_message(self, msg: dict):
         # updates heading and position
 
+        if not self.alive:
+            return
+
         if self.moved:
-            raise ValueError("Player tried to move twice")
+            raise ValueError(f"Player at position ({self.x},{self.y}) tried to move twice")
 
         direction = Direction(msg["move"])  # convert to enum
 
@@ -109,7 +112,7 @@ class TronGame:
 
     def __init__(self, num_players=4, board_size: Union[Callable[[], int], int] = 30,
                  polling_rate: float = 0., timeout: float = 30.,
-                 verbose: bool = False):
+                 verbose: bool = False, last_player_ends_game: bool = True):
         """Implementation of the Tron Light Cycles game.
 
         :param num_players: Number of players that can connect at once. Limited to 1-4
@@ -121,6 +124,9 @@ class TronGame:
         :param timeout: How long to wait for each Player to move. If the timeout is
         reached, it will stop the round and begin the next one
         :param verbose: Wether to print the game state after each step
+        :param last_player_ends_game: In multiplayer games, controls whether to stop
+            the game when only one player is alive (True) or to keep playing until
+            all players are dead
         """
         if 0 > num_players > 4:
             raise ValueError(f"Only 1-4 players are supported, got {num_players}")
@@ -130,6 +136,7 @@ class TronGame:
         self.board_size = board_size
         self.num_players = num_players
         self.verbose = verbose
+        self.last_player_ends_game = last_player_ends_game
 
         self.round = 0
         self.players: List[Player] = []
@@ -150,7 +157,7 @@ class TronGame:
         return True
 
     async def _start_game_loop(self):
-        while all(p.playing for p in self.players):
+        while len(self.players) > 0 and all(p.playing for p in self.players):
             self.round += 1
 
             if self.verbose:
@@ -162,8 +169,17 @@ class TronGame:
             timeout_start = time.time()
 
             while not self.game_over:
+                if time.time() - timeout_start > self.timeout:
+                    self.game_over = True
+                    print("No response from agent, game timed out...")
+
                 if all(p.moved or not p.alive for p in self.players):
                     self._update_board()
+
+                    if self._num_alive() < 1 or \
+                            (len(self.players) > 1 and self._num_alive() <= 1 and
+                             self.last_player_ends_game):
+                        self.game_over = True
 
                     if self.verbose:
                         # quick way to get a better board view
@@ -173,14 +189,6 @@ class TronGame:
                     self._broadcast_state()
 
                     timeout_start = time.time()
-
-                if time.time() - timeout_start > self.timeout:
-                    self.game_over = True
-                    warnings.warn("No response from agent, game timed out...")
-                    break
-
-                if self._num_alive() < 1:
-                    self.game_over = True
 
                 await asyncio.sleep(self._step_sleep_time)
 
@@ -201,7 +209,8 @@ class TronGame:
         self.board[:, 0] = BoardSquare.wall
         self.board[:, -1] = BoardSquare.wall
 
-        start_positions = (2, 2), (-3, -3), (2, -3), (-3, 2)
+        start_positions = (2, 2), (board_size - 3, board_size - 3), \
+                          (2, board_size - 3), (board_size - 3, 2)
         start_headings = [BoardSquare.opponent_north, BoardSquare.opponent_south,
                           BoardSquare.opponent_east, BoardSquare.opponent_west]
 
