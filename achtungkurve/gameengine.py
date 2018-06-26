@@ -213,8 +213,12 @@ class TronGame:
                           (2, board_size - 3), (board_size - 3, 2)
         start_headings = [BoardSquare.opponent_north, BoardSquare.opponent_south,
                           BoardSquare.opponent_east, BoardSquare.opponent_west]
+        
+        start_headings = np.random.choice(start_headings, size=(len(start_positions),))
+        starts = list(zip(start_positions, start_headings))
+        starts = np.random.permutation(starts)
 
-        for position, heading, player in zip(start_positions, start_headings, self.players):
+        for (position, heading), player in zip(starts, self.players):
             self.board[position] = heading
             player.heading = heading - 5  # todo
             player.x, player.y = position
