@@ -1,5 +1,4 @@
-agent
-training
+agent/*
 dt.pkl
 dt_2.pkl
 dt_4.pkl
