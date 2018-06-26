@@ -1,6 +1,6 @@
 import asyncio
 
-from achtungkurve.baum_ml_agent import BaumMlAgent
+from baum_agent.baum_ml_agent import BaumMlAgent
 from achtungkurve.server import SERVER_PORT
 from achtungkurve.client import AgentProtocol
 
