@@ -147,7 +147,7 @@ class RestrictedViewTronEnv(TronEnv):
                 x - self.view_distance: x + self.view_distance + 1,
                 y - self.view_distance: y + self.view_distance + 1]
 
-        mid = self.view_distance // 2 + 1
+        mid = self.view_distance
 
         if board[mid, mid] == 2:
             board = np.rot90(board, 1)
