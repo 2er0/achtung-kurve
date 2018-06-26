@@ -36,25 +36,25 @@ class BaumMlAgent(Agent):
     def __init__(self):
         print("Init client ...")
         folders = 0
-        for _, dir_names, _ in os.walk('baum/agent'):
+        for _, dir_names, _ in os.walk('agent'):
             folders += len(dir_names)
             break
         self.dir_name = str(folders)
 
-        if not os.path.exists("baum/agent/" + self.dir_name):
-            os.makedirs("baum/agent/" + self.dir_name)
+        if not os.path.exists("agent/" + self.dir_name):
+            os.makedirs("agent/" + self.dir_name)
 
         """
-        if not os.path.isfile("baum/dt_3.pkl"):
+        if not os.path.isfile("dt_3.pkl"):
             exit(1)
         print("Load base model ...")
-        self.clf = joblib.load('baum/dt_3.pkl')
+        self.clf = joblib.load('dt_3.pkl')
         """
 
         print("Load base data for future trainings ...")
         examples = 10
-        for filename in os.listdir("baum/training"):
-            with open("baum/training/" + filename, "rb") as fp:  # Unpickling
+        for filename in os.listdir("training"):
+            with open("training/" + filename, "rb") as fp:  # Unpickling
                 data = pickle.load(fp)
 
                 collect = [0, 0, 0]
@@ -85,7 +85,7 @@ class BaumMlAgent(Agent):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        joblib.dump(self.clf, 'baum/dt_4.pkl')
+        joblib.dump(self.clf, 'dt_4.pkl')
         return
 
     def next_move(self, state) -> Optional[dict]:
@@ -190,6 +190,6 @@ class BaumMlAgent(Agent):
 
     def __save_history(self):
         t = time.time()
-        with open("baum/agent/" + self.dir_name + "/" + str(t) + ".txt", "wb") as fp:  # Pickling
+        with open("agent/" + self.dir_name + "/" + str(t) + ".txt", "wb") as fp:  # Pickling
             pickle.dump(self.history, fp)
         self.history = list()

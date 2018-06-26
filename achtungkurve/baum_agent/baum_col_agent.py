@@ -29,7 +29,7 @@ class BaumColAgent(Agent):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
 
-        with open("baum/training/"+str(self.id)+".txt", "wb") as fp:  # Pickling
+        with open("training/"+str(self.id)+".txt", "wb") as fp:  # Pickling
             pickle.dump(self.data, fp)
 
     def next_move(self, state) -> Optional[dict]:
