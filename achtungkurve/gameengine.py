@@ -144,8 +144,6 @@ class TronGame:
         self.game_over = False
 
     def register_player(self, player: Player):
-        self._remove_inactive_players()
-
         if len(self.players) == self.num_players:
             return False
 
@@ -168,7 +166,7 @@ class TronGame:
 
             timeout_start = time.time()
 
-            while not self.game_over:
+            while not self.game_over and all(p.playing for p in self.players):
                 if time.time() - timeout_start > self.timeout:
                     self.game_over = True
                     print("No response from agent, game timed out...")
@@ -267,7 +265,6 @@ class TronGame:
         if not player.alive:
             return False
 
-        # todo check for two or more players collision and set that to wall
         if self.board[player.x, player.y] == BoardSquare.wall:
             player.alive = False
 
