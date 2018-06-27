@@ -1,6 +1,7 @@
 import asyncio
 import json
 import threading
+from json import JSONDecodeError
 
 from achtungkurve.agent import Agent, RandomAgent, AvoidsWallsAgent, AvoidsWallsRandomlyAgent
 from achtungkurve.server import SERVER_PORT
@@ -12,6 +13,7 @@ class AgentProtocol(asyncio.Protocol):
         self.loop = loop
         self.transport = None
         self._lock = threading.Lock()
+        self.message_buffer = ""
 
     def send_data(self, data: dict):
         self.transport.write(json.dumps(data).encode("UTF-8"))
@@ -19,18 +21,34 @@ class AgentProtocol(asyncio.Protocol):
     def connection_made(self, transport):
         self.transport = transport
 
+    def process_packet(self, packet):
+        return self.agent.next_move(packet)
+
     def data_received(self, data):
         self._lock.acquire()
 
         try:
-            split_data = data.decode("UTF-8").split("\0")[:-1]
-            for received_packet in split_data:
+            data = data.decode("UTF-8")
+
+            split_data = data.split("\0")
+
+            # handle all delimted json dicts
+            for received_packet in split_data[:-1]:
+                if self.message_buffer:
+                    received_packet = self.message_buffer + received_packet
+                    self.message_buffer = ""
+
                 received = json.loads(received_packet)
-                msg = self.agent.next_move(received)
+
+                msg = self.process_packet(received)
 
                 if received["alive"] and not received["game_over"] and msg:
                     delimited_json_data = json.dumps(msg) + "\0"
                     self.transport.write(delimited_json_data.encode("UTF-8"))
+
+            if split_data[-1] != "":  # last message not delimited, add to buffer
+                self.message_buffer += split_data[-1]
+
         finally:
             self._lock.release()
 

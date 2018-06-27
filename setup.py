@@ -7,5 +7,8 @@ setup(name='achtungkurve',
       license='MIT',
       packages=find_packages(),
       install_requires=["numpy", "scipy", "scikit-learn", "keras-rl", "keras", "tensorflow-gpu"],
+	  extras_require={
+		'knoll_agent': ['deap', 'dill']
+	  },
       zip_safe=False
       )
