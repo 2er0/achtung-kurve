@@ -15,7 +15,7 @@ class GameProtocol(asyncio.Protocol):
         self.player: Player = None
 
     def send_data(self, data: dict):
-        #print("sending", data)
+        # print("sending", data)
         delimited_json_data = json.dumps(data) + "\0"
         self.transport.write(delimited_json_data.encode("UTF-8"))
 
@@ -23,7 +23,10 @@ class GameProtocol(asyncio.Protocol):
         self.transport = transport
         self.player = Player(self.send_data)
         connected = self.game.register_player(self.player)
-        # todo closing transport here crashes the server, how to refuse connection if not connected?
+        
+        if not connected:
+            self.transport.write_eof()
+
         print("client connected!", transport.get_extra_info("peername"))
 
     def connection_lost(self, exc):
