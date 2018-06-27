@@ -30,13 +30,10 @@ class AgentProtocol(asyncio.Protocol):
         try:
             data = data.decode("UTF-8")
 
-            if "\0" not in data:
-                self.message_buffer += data
-                return
+            split_data = data.split("\0")
 
-            split_data = data.split("\0")[:-1]
-
-            for received_packet in split_data:
+            # handle all delimted json dicts
+            for received_packet in split_data[:-1]:
                 if self.message_buffer:
                     received_packet = self.message_buffer + received_packet
                     self.message_buffer = ""
@@ -48,6 +45,10 @@ class AgentProtocol(asyncio.Protocol):
                 if received["alive"] and not received["game_over"] and msg:
                     delimited_json_data = json.dumps(msg) + "\0"
                     self.transport.write(delimited_json_data.encode("UTF-8"))
+
+            if split_data[-1] != "":  # last message not delimited, add to buffer
+                self.message_buffer += split_data[-1]
+
         finally:
             self._lock.release()
 
