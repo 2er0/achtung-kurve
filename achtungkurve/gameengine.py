@@ -55,9 +55,11 @@ class Player:
         self.playing = True
         self.moved = False
         self.alive = True
+
         self.heading: Heading = None
         self.x: int = None
         self.y: int = None
+        self.games_won: int = 0
 
     def send_data(self, data: dict):
         board = data["board"]
@@ -160,11 +162,16 @@ class TronGame:
         return True
 
     async def _start_game_loop(self):
+        for player in self.players:
+            player.games_won = 0
+
         while len(self.players) > 0 and all(p.playing for p in self.players):
             self.round += 1
 
             if self.verbose:
                 print(f"Starting round {self.round}")
+                print(f"Wins: {[p.games_won for p in self.players]}")
+                print()
 
             self._reset_game()
             self._broadcast_state()
@@ -185,6 +192,7 @@ class TronGame:
                     mvp_dead = self.first_player_mvp and not self.players[-1].alive
 
                     if all_dead or (is_multiplayer and last_man_standing) or mvp_dead:
+                        self._add_wins()
                         self.game_over = True
 
                     if self.verbose:
@@ -198,8 +206,11 @@ class TronGame:
 
                 await asyncio.sleep(self._step_sleep_time)
 
+        print("Player disconnected, game ends")
+        print(f"Wins: {[p.games_won for p in self.players]}")
+        print()
+
         self._remove_inactive_players()
-        # todo end game / shut down server?
 
     def _num_alive(self):
         return sum(p.alive and p.playing for p in self.players)
@@ -280,3 +291,10 @@ class TronGame:
 
     def _remove_inactive_players(self):
         self.players = [player for player in self.players if player.playing]
+
+    def _add_wins(self):
+        if len(self.players) > 1 and sum(p.alive for p in self.players) == 1:
+            for player in self.players:
+                if player.alive:
+                    player.games_won += 1
+
