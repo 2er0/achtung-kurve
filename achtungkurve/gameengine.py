@@ -112,7 +112,8 @@ class TronGame:
 
     def __init__(self, num_players=4, board_size: Union[Callable[[], int], int] = 30,
                  polling_rate: float = 0., timeout: float = 30.,
-                 verbose: bool = False, last_player_ends_game: bool = True):
+                 verbose: bool = False, last_player_ends_game: bool = True,
+                 last_player_mvp: bool = False):
         """Implementation of the Tron Light Cycles game.
 
         :param num_players: Number of players that can connect at once. Limited to 1-4
@@ -127,6 +128,9 @@ class TronGame:
         :param last_player_ends_game: In multiplayer games, controls whether to stop
             the game when only one player is alive (True) or to keep playing until
             all players are dead
+        :param last_player_mvp: In multiplayer games, controls whether to stop
+            the game when the first player (the MVP) dies. This speeds up training
+            for that player.
         """
         if 0 > num_players > 4:
             raise ValueError(f"Only 1-4 players are supported, got {num_players}")
@@ -137,6 +141,7 @@ class TronGame:
         self.num_players = num_players
         self.verbose = verbose
         self.last_player_ends_game = last_player_ends_game
+        self.first_player_mvp = last_player_mvp
 
         self.round = 0
         self.players: List[Player] = []
@@ -174,9 +179,12 @@ class TronGame:
                 if all(p.moved or not p.alive for p in self.players):
                     self._update_board()
 
-                    if self._num_alive() < 1 or \
-                            (len(self.players) > 1 and self._num_alive() <= 1 and
-                             self.last_player_ends_game):
+                    all_dead = self._num_alive() < 1
+                    is_multiplayer = len(self.players) > 1
+                    last_man_standing = self._num_alive() <= 1 and self.last_player_ends_game
+                    mvp_dead = self.first_player_mvp and not self.players[-1].alive
+
+                    if all_dead or (is_multiplayer and last_man_standing) or mvp_dead:
                         self.game_over = True
 
                     if self.verbose:
@@ -211,7 +219,7 @@ class TronGame:
                           (2, board_size - 3), (board_size - 3, 2)
         start_headings = [BoardSquare.opponent_north, BoardSquare.opponent_south,
                           BoardSquare.opponent_east, BoardSquare.opponent_west]
-        
+
         start_headings = np.random.choice(start_headings, size=(len(start_positions),))
         starts = list(zip(start_positions, start_headings))
         starts = np.random.permutation(starts)

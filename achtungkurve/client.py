@@ -9,7 +9,7 @@ from achtungkurve.server import SERVER_PORT
 
 class AgentProtocol(asyncio.Protocol):
     def __init__(self, agent: Agent, loop):
-        self.agent = agent  # todo able to swap agent without restarting server and reconnecting
+        self.agent = agent
         self.loop = loop
         self.transport = None
         self._lock = threading.Lock()
