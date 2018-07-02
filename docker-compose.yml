@@ -1,7 +1,7 @@
-version '3'
+version: '3'
 
 services:
-  kurvSrv:
+  kurvsrv:
     build: .
     network_mode: traefik_net
     environment:
