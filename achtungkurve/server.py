@@ -2,6 +2,7 @@ import asyncio
 import json
 import random
 import sys
+import os
 
 from achtungkurve.gameengine import TronGame, Player
 
@@ -42,7 +43,7 @@ class GameProtocol(asyncio.Protocol):
 
 
 def start_tron_server(tron_game: TronGame):
-    server = loop.run_until_complete(loop.create_server(lambda: GameProtocol(tron_game), 'localhost', SERVER_PORT))
+    server = loop.run_until_complete(loop.create_server(lambda: GameProtocol(tron_game), '', SERVER_PORT))
 
     print('Serving on {} for {} players'.format(server.sockets[0].getsockname(), tron_game.num_players))
 
@@ -60,6 +61,8 @@ if __name__ == "__main__":
     players = 1
     if len(sys.argv) > 1:
         players = int(sys.argv[1])
+    if os.environ['AGENTS']:
+        players = int(os.environ['AGENTS'])
         
     loop = asyncio.get_event_loop()
 

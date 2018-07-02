@@ -1,0 +1,19 @@
+version '3'
+
+services:
+  kurvSrv:
+    build: .
+    network_mode: traefik_net
+    environment:
+      - AGENTS=2
+    labels:
+      - "traefik.backend=kurvSrv"
+      - "traefik.frontend.rule=Host:kurv.astra.dbaumi.at"
+      - "traefik.enable=true"
+      - "traefik.protocol=wss"
+      - "traefik.port=15555"
+
+networks:
+  public:
+    external:
+      name: traefik_net

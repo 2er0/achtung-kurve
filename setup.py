@@ -6,9 +6,7 @@ setup(name='achtungkurve',
       url='https://github.com/2er0/achtung-kurve',
       license='MIT',
       packages=find_packages(),
-      install_requires=["numpy", "scipy", "scikit-learn", "keras-rl", "keras", "tensorflow-gpu"],
-	  extras_require={
-		'knoll_agent': ['deap', 'dill']
-	  },
+      install_requires=["numpy", "scipy"],
+      extras_require={},
       zip_safe=False
       )
