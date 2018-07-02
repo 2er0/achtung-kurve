@@ -52,7 +52,7 @@ class BaumMlAgent(Agent):
         """
 
         print("Load base data for future trainings ...")
-        examples = 10
+        examples = 2
         for filename in os.listdir("training"):
             with open("training/" + filename, "rb") as fp:  # Unpickling
                 data = pickle.load(fp)
@@ -92,17 +92,17 @@ class BaumMlAgent(Agent):
         state = State(**state)
 
         if state.last_alive:
-            self.trained = False
-            # print("I won!! :)")
+            print("I won!! :)")
+
+        if state.game_over:
+            print("Game Over ...")
+            print(f"I'm dead :( - Version {self.aktive}")
+            print("I'm training ...")
+            self.trained = True
+            self.__train_tree()
+            self.__save_history()
 
         if not state.alive:
-            print(f"I'm dead :( - Version {self.aktive}")
-            if not self.trained:
-                print("I'm training ...")
-                self.trained = True
-                self.__train_tree()
-                self.__save_history()
-
             return None
 
         board = np.asarray(state.board, dtype=np.int)
