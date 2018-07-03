@@ -27,7 +27,7 @@ class BaumMlAgent(Agent):
 
     short_mem_board = list()
     short_mem_labels = list()
-    short_mem_size = 128
+    short_mem_size = 256
     long_mem_board = list()
     long_mem_labels = list()
 
@@ -237,7 +237,7 @@ class BaumMlAgent(Agent):
 
         self.short_mem_board = other.short_mem_board
         self.short_mem_labels = other.short_mem_labels
-        self.short_mem_size = other.short_mem_size
+        # self.short_mem_size = other.short_mem_size
 
         self.clf = other.clf
         self.current = other.current
