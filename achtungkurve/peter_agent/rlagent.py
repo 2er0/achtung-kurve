@@ -126,7 +126,7 @@ class TronEnv(Env):
         if not self.state:
             self.state = self.agent.state_queue.get()
 
-        while not self.state["alive"]:
+        while not self.state["alive"] or self.state["game_over"]:
             self.state = self.agent.take_action(None)
 
         self.alive_opponents = self._count_opponents()
