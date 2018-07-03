@@ -67,6 +67,6 @@ if __name__ == "__main__":
     loop = asyncio.get_event_loop()
 
     tron = TronGame(num_players=players, board_size=lambda: random.randint(5,10)+5*players,
-                    timeout=10, polling_rate=4, verbose=True, last_player_ends_game=True)
+                    timeout=10, polling_rate=0, verbose=True, last_player_ends_game=True)
 
     start_tron_server(tron)

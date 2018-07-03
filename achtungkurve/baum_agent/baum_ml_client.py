@@ -10,7 +10,7 @@ if __name__ == "__main__":
     with BaumMlAgent() as agent:
 
         coro = loop.create_connection(lambda: AgentProtocol(agent, loop),
-                                      'home.dbaumi.at', '45555')
+                                      'kurv.home.dbaumi.at', 44480)
                                       #'localhost', SERVER_PORT)
         loop.run_until_complete(coro)
         loop.run_forever()
