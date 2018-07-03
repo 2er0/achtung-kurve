@@ -95,9 +95,10 @@ class TronEnv(Env):
         self.state = None
 
     def render(self, mode='human', close=False):
-        # board = self._board_from_state()
-        board = np.array(self.state["board"])
+        board = self._board_from_state()
+        # board = np.array(self.state["board"])
         print(str(np.rot90(board)).replace('0', '-'))
+        print(f"Won {self.state['wins']}, lost {self.state['losses']}")
         print()
 
     def close(self):
