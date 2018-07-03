@@ -1,6 +1,5 @@
 import asyncio
 import time
-import warnings
 from enum import Enum, IntEnum
 from itertools import permutations
 from typing import Union, Callable, List
@@ -60,6 +59,7 @@ class Player:
         self.x: int = None
         self.y: int = None
         self.games_won: int = 0
+        self.games_lost: int = 0
 
     def send_data(self, data: dict):
         board = data["board"]
@@ -68,6 +68,8 @@ class Player:
         data["position"] = (self.x, self.y)
         data["alive"] = self.alive
         data["board"] = board.tolist()  # np.ndarray is not json serializable
+        data["wins"] = self.games_won
+        data["losses"] = self.games_lost
 
         self.client_callback(data)
 
@@ -115,7 +117,8 @@ class TronGame:
     def __init__(self, num_players=4, board_size: Union[Callable[[], int], int] = 30,
                  polling_rate: float = 0., timeout: float = 30.,
                  verbose: bool = False, last_player_ends_game: bool = True,
-                 last_player_mvp: bool = False):
+                 last_player_mvp: bool = False,
+                 kick_all_on_disconnect: bool = False):
         """Implementation of the Tron Light Cycles game.
 
         :param num_players: Number of players that can connect at once. Limited to 1-4
@@ -144,6 +147,7 @@ class TronGame:
         self.verbose = verbose
         self.last_player_ends_game = last_player_ends_game
         self.first_player_mvp = last_player_mvp
+        self.kick_all_on_disconnect = kick_all_on_disconnect
 
         self.round = 0
         self.players: List[Player] = []
@@ -290,11 +294,22 @@ class TronGame:
         return player.alive
 
     def _remove_inactive_players(self):
+        disconnected = any(not player.playing for player in self.players)
         self.players = [player for player in self.players if player.playing]
+
+        if disconnected and self.kick_all_on_disconnect:
+            print("Player disconnected, closing")
+            for player in self.players:
+                player.playing = False
+                player.client_callback({})
+
+            self.players = []
 
     def _add_wins(self):
         if len(self.players) > 1 and sum(p.alive for p in self.players) == 1:
             for player in self.players:
                 if player.alive:
                     player.games_won += 1
+                else:
+                    player.games_lost += 1
 
