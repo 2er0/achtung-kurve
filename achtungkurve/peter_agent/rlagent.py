@@ -37,6 +37,9 @@ class QueueAgent(Agent):
             2: "right"
         }
 
+    def quit(self):
+        self.action_queue.put("quit")
+
     def next_move(self, state):
         self.state_queue.put(state)
         action = self.action_queue.get()
