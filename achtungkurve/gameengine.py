@@ -168,6 +168,7 @@ class TronGame:
     async def _start_game_loop(self):
         for player in self.players:
             player.games_won = 0
+            player.games_lost = 0
 
         while len(self.players) > 0 and all(p.playing for p in self.players):
             self.round += 1
