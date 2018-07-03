@@ -1,19 +1,9 @@
-import asyncio
 import multiprocessing
 
 import numpy as np
-from keras import Sequential
-from keras.layers import Conv2D, BatchNormalization, Flatten, Dense, Activation, MaxPooling2D, Permute
-from keras.optimizers import Adam
-from rl.agents.dqn import DQNAgent
-from rl.callbacks import ModelIntervalCheckpoint, FileLogger
 from rl.core import Processor, Env, Space
-from rl.memory import SequentialMemory
-from rl.policy import LinearAnnealedPolicy, EpsGreedyQPolicy, BoltzmannQPolicy
 
 from achtungkurve.agent import Agent
-from achtungkurve.client import AgentProtocol
-from achtungkurve.server import SERVER_PORT
 
 
 class TronProcessor(Processor):
@@ -196,98 +186,3 @@ class RestrictedViewTronEnv(TronEnv):
         board[mid, mid] = 1
 
         return board
-
-
-def run_agent(agent):
-    print("started new process")
-
-    import tensorflow as tf
-    from keras.backend.tensorflow_backend import set_session
-
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-    set_session(tf.Session(config=config))
-
-    WINDOW_LENGTH = 1
-
-    num_actions = 3
-    view_shape = (11, 11)
-    input_shape = (WINDOW_LENGTH,) + view_shape
-
-    env = RestrictedViewTronEnv(agent, 5)
-
-    model = Sequential()
-
-    model.add(Permute((2, 3, 1), input_shape=input_shape))
-
-    model.add(Conv2D(32, (3, 3), padding="same"))
-    model.add(Activation("relu"))
-
-    model.add(Conv2D(64, (3, 3), padding="same"))
-    model.add(Activation("relu"))
-
-    model.add(Conv2D(128, (3, 3), padding="same"))
-    model.add(Activation("relu"))
-    model.add(Flatten())
-
-    model.add(Dense(512))
-    model.add(Activation("relu"))
-
-    model.add(Dense(num_actions, activation="linear"))
-
-    np.random.seed(2363)
-
-    policy = LinearAnnealedPolicy(BoltzmannQPolicy(), attr='tau', value_max=2.,
-                                  value_min=.1, value_test=.1, nb_steps=1000000 // 10)
-
-    processor = TronProcessor()
-
-    memory = SequentialMemory(limit=1000000, window_length=WINDOW_LENGTH)
-
-    dqn = DQNAgent(model, nb_actions=num_actions, policy=policy, memory=memory, processor=processor,
-                   nb_steps_warmup=50000 // 5, gamma=.9, target_model_update=10000,
-                   train_interval=4, delta_clip=1.)
-
-    dqn.compile(Adam(lr=.00025), metrics=["mae"])
-
-    weights_filename = 'tmp/dqn_test_weights.h5f'
-    checkpoint_weights_filename = 'tmp/dqn_test_weights_{step}.h5f'
-    log_filename = 'tmp/dqn_test_log.json'
-    callbacks = [ModelIntervalCheckpoint(checkpoint_weights_filename, interval=250000 // 10)]
-    callbacks += [FileLogger(log_filename, interval=10000)]
-
-    def train(transfer=False):
-        print(dqn.get_config())  # todo save to file
-
-        if transfer:
-            dqn.load_weights(weights_filename)
-
-        dqn.fit(env, callbacks=callbacks, nb_steps=1750000 // 10, log_interval=10000)
-        dqn.save_weights(weights_filename, overwrite=True)
-        dqn.test(env, nb_episodes=20, visualize=True)
-
-    def opponent():
-        dqn.load_weights('tmp/dqn_test_weights.h5f')
-        dqn.test(env, nb_episodes=200000, visualize=False)
-
-    def test():
-        dqn.load_weights('tmp/dqn_test_weights.h5f')
-        dqn.test(env, nb_episodes=20, visualize=True)
-
-    # opponent()
-    # train(True)
-    test()
-
-
-if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    agent = QueueAgent()
-
-    process = multiprocessing.Process(target=run_agent, args=(agent,))
-    process.start()
-
-    coro = loop.create_connection(lambda: AgentProtocol(agent, loop),
-                                  'localhost', SERVER_PORT)
-    loop.run_until_complete(coro)
-    loop.run_forever()
-    loop.close()
