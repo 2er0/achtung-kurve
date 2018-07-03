@@ -1,6 +1,5 @@
 import asyncio
 import time
-import warnings
 from enum import Enum, IntEnum
 from itertools import permutations
 from typing import Union, Callable, List
@@ -60,6 +59,7 @@ class Player:
         self.x: int = None
         self.y: int = None
         self.games_won: int = 0
+        self.games_lost: int = 0
 
     def send_data(self, data: dict):
         board = data["board"]
@@ -68,6 +68,8 @@ class Player:
         data["position"] = (self.x, self.y)
         data["alive"] = self.alive
         data["board"] = board.tolist()  # np.ndarray is not json serializable
+        data["wins"] = self.games_won
+        data["losses"] = self.games_lost
 
         self.client_callback(data)
 
@@ -297,4 +299,6 @@ class TronGame:
             for player in self.players:
                 if player.alive:
                     player.games_won += 1
+                else:
+                    player.games_lost += 1
 
