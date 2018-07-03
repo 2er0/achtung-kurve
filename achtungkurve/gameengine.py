@@ -1,6 +1,5 @@
 import asyncio
 import time
-import warnings
 from enum import Enum, IntEnum
 from itertools import permutations
 from typing import Union, Callable, List
@@ -55,9 +54,12 @@ class Player:
         self.playing = True
         self.moved = False
         self.alive = True
+
         self.heading: Heading = None
         self.x: int = None
         self.y: int = None
+        self.games_won: int = 0
+        self.games_lost: int = 0
 
     def send_data(self, data: dict):
         board = data["board"]
@@ -66,6 +68,8 @@ class Player:
         data["position"] = (self.x, self.y)
         data["alive"] = self.alive
         data["board"] = board.tolist()  # np.ndarray is not json serializable
+        data["wins"] = self.games_won
+        data["losses"] = self.games_lost
 
         self.client_callback(data)
 
@@ -112,7 +116,9 @@ class TronGame:
 
     def __init__(self, num_players=4, board_size: Union[Callable[[], int], int] = 30,
                  polling_rate: float = 0., timeout: float = 30.,
-                 verbose: bool = False, last_player_ends_game: bool = True):
+                 verbose: bool = False, last_player_ends_game: bool = True,
+                 last_player_mvp: bool = False,
+                 kick_all_on_disconnect: bool = False):
         """Implementation of the Tron Light Cycles game.
 
         :param num_players: Number of players that can connect at once. Limited to 1-4
@@ -127,6 +133,9 @@ class TronGame:
         :param last_player_ends_game: In multiplayer games, controls whether to stop
             the game when only one player is alive (True) or to keep playing until
             all players are dead
+        :param last_player_mvp: In multiplayer games, controls whether to stop
+            the game when the first player (the MVP) dies. This speeds up training
+            for that player.
         """
         if 0 > num_players > 4:
             raise ValueError(f"Only 1-4 players are supported, got {num_players}")
@@ -137,6 +146,8 @@ class TronGame:
         self.num_players = num_players
         self.verbose = verbose
         self.last_player_ends_game = last_player_ends_game
+        self.first_player_mvp = last_player_mvp
+        self.kick_all_on_disconnect = kick_all_on_disconnect
 
         self.round = 0
         self.players: List[Player] = []
@@ -144,8 +155,6 @@ class TronGame:
         self.game_over = False
 
     def register_player(self, player: Player):
-        self._remove_inactive_players()
-
         if len(self.players) == self.num_players:
             return False
 
@@ -157,18 +166,23 @@ class TronGame:
         return True
 
     async def _start_game_loop(self):
+        for player in self.players:
+            player.games_won = 0
+
         while len(self.players) > 0 and all(p.playing for p in self.players):
             self.round += 1
 
             if self.verbose:
                 print(f"Starting round {self.round}")
+                print(f"Wins: {[p.games_won for p in self.players]}")
+                print()
 
             self._reset_game()
             self._broadcast_state()
 
             timeout_start = time.time()
 
-            while not self.game_over:
+            while not self.game_over and all(p.playing for p in self.players):
                 if time.time() - timeout_start > self.timeout:
                     self.game_over = True
                     print("No response from agent, game timed out...")
@@ -176,9 +190,13 @@ class TronGame:
                 if all(p.moved or not p.alive for p in self.players):
                     self._update_board()
 
-                    if self._num_alive() < 1 or \
-                            (len(self.players) > 1 and self._num_alive() <= 1 and
-                             self.last_player_ends_game):
+                    all_dead = self._num_alive() < 1
+                    is_multiplayer = len(self.players) > 1
+                    last_man_standing = self._num_alive() <= 1 and self.last_player_ends_game
+                    mvp_dead = self.first_player_mvp and not self.players[-1].alive
+
+                    if all_dead or (is_multiplayer and last_man_standing) or mvp_dead:
+                        self._add_wins()
                         self.game_over = True
 
                     if self.verbose:
@@ -192,8 +210,11 @@ class TronGame:
 
                 await asyncio.sleep(self._step_sleep_time)
 
+        print("Player disconnected, game ends")
+        print(f"Wins: {[p.games_won for p in self.players]}")
+        print()
+
         self._remove_inactive_players()
-        # todo end game / shut down server?
 
     def _num_alive(self):
         return sum(p.alive and p.playing for p in self.players)
@@ -214,7 +235,11 @@ class TronGame:
         start_headings = [BoardSquare.opponent_north, BoardSquare.opponent_south,
                           BoardSquare.opponent_east, BoardSquare.opponent_west]
 
-        for position, heading, player in zip(start_positions, start_headings, self.players):
+        start_headings = np.random.choice(start_headings, size=(len(start_positions),))
+        starts = list(zip(start_positions, start_headings))
+        starts = np.random.permutation(starts)
+
+        for (position, heading), player in zip(starts, self.players):
             self.board[position] = heading
             player.heading = heading - 5  # todo
             player.x, player.y = position
@@ -263,11 +288,28 @@ class TronGame:
         if not player.alive:
             return False
 
-        # todo check for two or more players collision and set that to wall
         if self.board[player.x, player.y] == BoardSquare.wall:
             player.alive = False
 
         return player.alive
 
     def _remove_inactive_players(self):
+        disconnected = any(not player.playing for player in self.players)
         self.players = [player for player in self.players if player.playing]
+
+        if disconnected and self.kick_all_on_disconnect:
+            print("Player disconnected, closing")
+            for player in self.players:
+                player.playing = False
+                player.client_callback({})
+
+            self.players = []
+
+    def _add_wins(self):
+        if len(self.players) > 1 and sum(p.alive for p in self.players) == 1:
+            for player in self.players:
+                if player.alive:
+                    player.games_won += 1
+                else:
+                    player.games_lost += 1
+

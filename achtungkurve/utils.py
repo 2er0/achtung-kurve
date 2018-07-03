@@ -1,10 +1,12 @@
 # quick State class
 class State:
-    position: (1, 2)
+    position: []
     alive: True
     board: [[]]
     last_alive: False
     game_over: False
+    wins: 0
+    losses: 0
 
     def __init__(self, **entries):
         self.__dict__.update(entries)

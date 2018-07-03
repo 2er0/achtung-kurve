@@ -75,14 +75,21 @@ class AvoidsWallsRandomlyAgent(AvoidsWallsAgent):
         board = np.array(state["board"])
         position = tuple(np.array(state["position"]))
 
-        if state["last_alive"]:
-            print("I won!! :)")
+        # if state["last_alive"]:
+        #     print("I won!! :)")
+        #
+        # if not state["alive"]:
+        #     print("I'm dead :(")
+        #
+        # if state["game_over"]:
+        #     print("game_over")
+        #
+        # board = np.array(state["board"])
+        # print(str(np.rot90(board)).replace('0', '-'))
+        # print()
 
         if not state["alive"]:
-            print("I'm dead :(")
-
-        if state["game_over"]:
-            print("game_over")
+            return None
 
         heading = board[position]
         rand_turn = random.randint(0, 2)

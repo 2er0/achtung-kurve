@@ -1,19 +1,10 @@
-import asyncio
 import multiprocessing
+import time
 
 import numpy as np
-from keras import Sequential
-from keras.layers import Conv2D, BatchNormalization, Flatten, Dense, Activation, MaxPooling2D, Permute
-from keras.optimizers import Adam
-from rl.agents.dqn import DQNAgent
-from rl.callbacks import ModelIntervalCheckpoint, FileLogger
 from rl.core import Processor, Env, Space
-from rl.memory import SequentialMemory
-from rl.policy import LinearAnnealedPolicy, EpsGreedyQPolicy, BoltzmannQPolicy
 
 from achtungkurve.agent import Agent
-from achtungkurve.client import AgentProtocol
-from achtungkurve.server import SERVER_PORT
 
 
 class TronProcessor(Processor):
@@ -36,6 +27,9 @@ class QueueAgent(Agent):
             1: "forward",
             2: "right"
         }
+
+    def quit(self):
+        self.action_queue.put("quit")
 
     def next_move(self, state):
         self.state_queue.put(state)
@@ -87,12 +81,17 @@ class TronEnv(Env):
     def __init__(self, agent: QueueAgent):
         self.action_space = DiscreteSpace(3)
         self.agent = agent
+        self.alive_opponents = None
+        self.playing_opponents = None
         self.state = None
 
     def render(self, mode='human', close=False):
-        board = np.array(self.state["board"])
+        board = self._board_from_state()
+        # board = np.array(self.state["board"])
         print(str(np.rot90(board)).replace('0', '-'))
+        print(f"Won {self.state['wins']}, lost {self.state['losses']}")
         print()
+        time.sleep(0.8)
 
     def close(self):
         pass
@@ -109,12 +108,13 @@ class TronEnv(Env):
 
         board = self._board_from_state()
 
+        score = self._calc_reward()
+
         alive = self.state["alive"]
         game_over = self.state["game_over"]
-        last_alive = self.state["last_alive"]
-        score = 1 if last_alive else 0.1 if alive else -1.
-
         done = game_over or not alive
+
+        self.alive_opponents = self._count_opponents()
 
         return board, score, done, {}
 
@@ -122,10 +122,39 @@ class TronEnv(Env):
         if not self.state:
             self.state = self.agent.state_queue.get()
 
-        while not self.state["alive"]:
+        while not self.state["alive"] or self.state["game_over"]:
             self.state = self.agent.take_action(None)
 
-        return np.array(self._board_from_state())
+        self.alive_opponents = self._count_opponents()
+        self.playing_opponents = self.alive_opponents
+
+        return self._board_from_state()
+
+    def _calc_reward(self):
+        if self.state["last_alive"] and self.playing_opponents > 0:
+            score = 2
+        else:
+            score = 0
+
+        if not self.state["alive"]:
+            score += -2
+        else:
+            # small bonus for staying alive, magnitude depending on board size
+            # capturing 1/num_players of the board yields 1 reward
+            inner_board_len = np.array(self.state["board"]).shape[0] - 2
+            total_board_air = (inner_board_len ** 2) - 4
+            score += (self.playing_opponents + 1) / total_board_air
+
+        current_alive = self._count_opponents()
+
+        # extra reward when opponents die
+        score += (self.alive_opponents - current_alive) * 1 / self.playing_opponents
+
+        return score
+
+    def _count_opponents(self) -> int:
+        board = np.array(self.state["board"])
+        return ((board == 5) | (board == 6) | (board == 7) | (board == 8)).sum()
 
     def _board_from_state(self):
         return np.array(self.state["board"])
@@ -147,7 +176,7 @@ class RestrictedViewTronEnv(TronEnv):
                 x - self.view_distance: x + self.view_distance + 1,
                 y - self.view_distance: y + self.view_distance + 1]
 
-        mid = self.view_distance // 2 + 1
+        mid = self.view_distance
 
         if board[mid, mid] == 2:
             board = np.rot90(board, 1)
@@ -159,87 +188,3 @@ class RestrictedViewTronEnv(TronEnv):
         board[mid, mid] = 1
 
         return board
-
-
-def run_agent(agent):
-    print("started new process")
-
-    import tensorflow as tf
-    from keras.backend.tensorflow_backend import set_session
-
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-    set_session(tf.Session(config=config))
-
-    WINDOW_LENGTH = 4
-
-    num_actions = 3
-    board_shape = (5, 5)
-    input_shape = (WINDOW_LENGTH,) + board_shape
-
-    env = RestrictedViewTronEnv(agent, 2)
-
-    model = Sequential()
-
-    model.add(Permute((2, 3, 1), input_shape=input_shape))
-
-    # model.add(Conv2D(64, (3, 3), padding="same"))
-    # model.add(Activation("relu"))
-    model.add(Flatten())
-
-    model.add(Dense(32))
-    model.add(Activation("relu"))
-
-    model.add(Dense(num_actions, activation="linear"))
-
-    np.random.seed(2363)
-
-    policy = LinearAnnealedPolicy(BoltzmannQPolicy(), attr='tau', value_max=10.,
-                                  value_min=.1, value_test=1, nb_steps=1000000 // 10)
-
-    processor = TronProcessor()
-
-    memory = SequentialMemory(limit=1000000 // 10, window_length=WINDOW_LENGTH)
-
-    dqn = DQNAgent(model, nb_actions=num_actions, policy=policy, memory=memory, processor=processor,
-                   nb_steps_warmup=50000, gamma=.9, target_model_update=10000,
-                   train_interval=4, delta_clip=1.)
-
-    dqn.compile(Adam(lr=.00025), metrics=["mae"])
-
-    weights_filename = 'tmp/dqn_test_weights.h5f'
-    checkpoint_weights_filename = 'tmp/dqn_test_weights_{step}.h5f'
-    log_filename = 'tmp/dqn_test_log.json'
-    callbacks = [ModelIntervalCheckpoint(checkpoint_weights_filename, interval=250000 // 10)]
-    callbacks += [FileLogger(log_filename, interval=10000)]
-
-    def train(transfer=False):
-        print(dqn.get_config())  # todo save to file
-
-        if transfer:
-            dqn.load_weights(weights_filename)
-
-        dqn.fit(env, callbacks=callbacks, nb_steps=1750000 // 10, log_interval=10000)
-        dqn.save_weights(weights_filename, overwrite=True)
-        dqn.test(env, nb_episodes=20, visualize=True)
-
-    def opponent():
-        dqn.load_weights('tmp/dqn_test_weights.h5f')
-        dqn.test(env, nb_episodes=200000, visualize=False)
-
-    opponent()
-    train(True)
-
-
-if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    agent = QueueAgent()
-
-    process = multiprocessing.Process(target=run_agent, args=(agent,))
-    process.start()
-
-    coro = loop.create_connection(lambda: AgentProtocol(agent, loop),
-                                  'localhost', SERVER_PORT)
-    loop.run_until_complete(coro)
-    loop.run_forever()
-    loop.close()
