@@ -42,6 +42,11 @@ class AgentProtocol(asyncio.Protocol):
 
                 msg = self.process_packet(received)
 
+                if msg == {"move": "quit"}:
+                    self.transport.write_eof()
+                    self.loop.stop()
+                    return
+
                 if received["alive"] and not received["game_over"] and msg:
                     delimited_json_data = json.dumps(msg) + "\0"
                     self.transport.write(delimited_json_data.encode("UTF-8"))
