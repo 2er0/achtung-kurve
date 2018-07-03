@@ -132,12 +132,12 @@ class TronEnv(Env):
 
     def _calc_reward(self):
         if self.state["last_alive"] and self.playing_opponents > 0:
-            return 1
-
-        score = 0
+            score = 2
+        else:
+            score = 0
 
         if not self.state["alive"]:
-            score += -1
+            score += -2
         else:
             # small bonus for staying alive, magnitude depending on board size
             # capturing 1/num_players of the board yields 1 reward
@@ -148,7 +148,7 @@ class TronEnv(Env):
         current_alive = self._count_opponents()
 
         # extra reward when opponents die
-        score += (self.alive_opponents - current_alive) * 0.25
+        score += (self.alive_opponents - current_alive) * 1 / self.playing_opponents
 
         return score
 
