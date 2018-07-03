@@ -1,4 +1,5 @@
 import multiprocessing
+import time
 
 import numpy as np
 from rl.core import Processor, Env, Space
@@ -90,6 +91,7 @@ class TronEnv(Env):
         print(str(np.rot90(board)).replace('0', '-'))
         print(f"Won {self.state['wins']}, lost {self.state['losses']}")
         print()
+        time.sleep(0.8)
 
     def close(self):
         pass
