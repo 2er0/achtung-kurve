@@ -26,7 +26,7 @@ class GameProtocol(asyncio.Protocol):
         self.transport = transport
         self.player = Player(self.send_data)
         connected = self.game.register_player(self.player)
-        
+
         if not connected:
             self.transport.write_eof()
 
