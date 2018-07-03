@@ -3,17 +3,19 @@ version: '3'
 services:
   kurvsrv:
     build: .
-    network_mode: traefik_net
+    networks:
+      - webgateway
+    ports:
+      - "44480:15555"
     environment:
       - AGENTS=2
     labels:
       - "traefik.backend=kurvSrv"
       - "traefik.frontend.rule=Host:kurv.astra.dbaumi.at"
-      - "traefik.enable=true"
+      - "traefik.enable=false"
       - "traefik.protocol=wss"
       - "traefik.port=15555"
 
 networks:
-  public:
-    external:
-      name: traefik_net
+  webgateway:
+    driver: bridge
