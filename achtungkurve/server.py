@@ -15,7 +15,10 @@ class GameProtocol(asyncio.Protocol):
         self.player: Player = None
 
     def send_data(self, data: dict):
-        # print("sending", data)
+        if not self.player.playing:
+            self.transport.write_eof()
+            return
+
         delimited_json_data = json.dumps(data) + "\0"
         self.transport.write(delimited_json_data.encode("UTF-8"))
 
