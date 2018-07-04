@@ -18,7 +18,7 @@ class Agent(metaclass=abc.ABCMeta):
 
 def _new_Tree():
     return tree.DecisionTreeClassifier(
-        criterion="entropy", splitter="random"
+        criterion="entropy", splitter="random", max_leaf_nodes=768
     )
 
 
@@ -81,7 +81,7 @@ class BaumMlAgent(Agent):
                     if all(i >= examples for i in collect):
                         break
         """
-        load = False
+        load = True
         if not load:
             print("Generate new agent ...")
             # random.seed(42)
@@ -98,7 +98,9 @@ class BaumMlAgent(Agent):
             print("Train base model")
             self.clf = self.clf.fit(self.short_mem_board, self.short_mem_labels)
         else:
-            with open("agent/1/agent.pkl", "rb") as fp:
+            print("Load agent from FS ...")
+            agent = 1
+            with open("agent/"+str(agent)+"/agent.pkl", "rb") as fp:
                 other = pickle.load(fp)
                 self.__apply_past(other)
 
