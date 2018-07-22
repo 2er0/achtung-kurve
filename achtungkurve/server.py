@@ -63,6 +63,8 @@ if __name__ == "__main__":
     players = 1
     if len(sys.argv) > 1:
         players = int(sys.argv[1])
+    if len(sys.argv) > 2:
+        SERVER_PORT = int(sys.argv[2])
         
     loop = asyncio.get_event_loop()
 
