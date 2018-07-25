@@ -1,0 +1,136 @@
+NB s.p.
+---------------------------------
+#47
+Training: win's: 56 | losses: 34
+Battle: win's: 64 | losses: 31
+
+#48
+Training: win's: 58 | losses: 35
+Battle: win's: 63 | losses: 20
+
+#49 rev:241
+Training: win's: 64 | losses: 21
+Battle: win's: 73 | losses: 17
+
+#50
+Training: win's: 74 | losses: 12
+Battle: win's: 73 | losses: 17
+
+#51
+Training: win's: 73 | losses: 17
+Battle: win's: 64 | losses: 27
+
+#52
+Training: win's: 70 | losses: 20
+Battle: win's: 76 | losses: 13
+
+#53
+Training: win's: 73 | losses: 16
+Battle: win's: 76 | losses: 14
+
+#54
+Training: win's: 76 | losses: 11
+Battle: win's: 74 | losses: 17
+
+#55
+Training: win's: 75 | losses: 13
+Battle: win's: 73 | losses: 17
+
+#56
+Training: win's: 81 | losses: 6
+Battle: win's: 75 | losses: 13
+
+#57
+Training: win's: 75 | losses: 13
+Battle: win's: 73 | losses: 19
+
+#58
+Training: win's: 78 | losses: 14
+Battle: win's: 78 | losses: 15
+
+Battle_200_Random: win's: 155 | losses: 30
+Battle_200_DTsp: win's: 77 | losses: 98
+Battle_200_DTmp: win's: 109 | losses: 34
+Battle_200_NBmp: win's: 88 | losses: 64
+
+===================================
+NB m.p.
+---------------------------------
+
+#59
+Training: 10 alone
+
+Phase 2
+vs. Random
+#60
+Training: win's: 54 | losses: 33
+Battle: win's: 59 | losses: 35
+
+#61
+Training: win's: 61 | losses: 34
+Battle: win's: 62 | losses: 36
+
+#62
+Training: win's: 71 | losses: 21
+Battle: win's: 74 | losses: 18
+
+#63
+Training: win's: 81 | losses: 16
+Battle: win's: 75 | losses: 15
+
+Phase 3
+vs. DTsp
+#64
+Training: win's: 80 | losses: 12
+Battle: win's: 73 | losses: 18
+
+#65
+Training: win's: 78 | losses: 18
+Battle: win's: 72 | losses: 19
+
+#66
+Training: win's: 71 | losses: 20
+Battle: win's: 71 | losses: 20
+
+#67
+Training: win's: 77 | losses: 15
+Battle: win's: 79 | losses: 13
+
+vs. DTmp
+#68
+Training: win's: 72 | losses: 25
+Battle: win's: 80 | losses: 15
+
+#69
+Training: win's: 78 | losses: 18
+Battle: win's: 74 | losses: 20
+
+#70
+Training: win's: 81 | losses: 16
+Battle: win's: 77 | losses: 17
+
+#71
+Training: win's: 81 | losses: 18
+Battle: win's: 86 | losses: 9
+
+vs. NBsp
+#72
+Training: win's: 45 | losses: 34
+Battle: win's: 29 | losses: 48
+
+#73
+Training: win's: 42 | losses: 43
+Battle: win's: 47 | losses: 36
+
+#74
+Training: win's: 33 | losses: 45
+Battle: win's: 37 | losses: 35
+
+#75
+Training: win's: 35 | losses: 45
+Battle: win's: 49 | losses: 37
+
+Battle_200_Random: win's: 149 | losses: 39
+Battle_200_DTsp: win's: 150 | losses: 34
+Battle_200_DTmp: win's: 154 | losses: 40
+Battle_200_NBmp: win's: 64 | losses: 88

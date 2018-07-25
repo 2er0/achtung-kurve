@@ -1,7 +1,11 @@
 import abc
+import pickle
+
 import numpy as np
 import random
 from typing import Optional
+
+from utils import State, ACTIONS
 
 
 class Agent(metaclass=abc.ABCMeta):
@@ -71,7 +75,18 @@ class AvoidsWallsAgent(Agent):
 
 
 class AvoidsWallsRandomlyAgent(AvoidsWallsAgent):
+
+    count = 1
+
     def next_move(self, state):
+
+        if state['game_over']:
+            print(f'round {self.count} ended')
+            self.count += 1
+
+            if self.count > 200:
+                exit(0)
+
         board = np.array(state["board"])
         position = tuple(np.array(state["position"]))
 
@@ -98,3 +113,57 @@ class AvoidsWallsRandomlyAgent(AvoidsWallsAgent):
             return {"move": self.ACTIONS[rand_turn]}
 
         return self.move_forward_if_possible(board, position, heading)
+
+
+class BaumAgent(Agent):
+
+    clf = None
+    pad = 2
+
+    def __init__(self):
+        agent = 33
+        print(f'BaumAgent: #{agent}')
+        with open("baum_agent/agent/" + str(agent) + "/agent.pkl", "rb") as fp:
+            other = pickle.load(fp)
+            self.clf = other.clf
+            self.pad = other.pad
+
+    count = 1
+
+    def next_move(self, state) -> Optional[dict]:
+
+        if state['game_over']:
+            print(f'round {self.count} ended')
+            print(f"Game Over ... win's: {state.wins} | losses: {state.losses}")
+            self.count += 1
+
+            if self.count > 200:
+                exit(0)
+
+        if not state["alive"]:
+            return None
+
+        state = State(**state)
+
+        pad = self.pad
+        board = np.asarray(state.board, dtype=np.int)
+        board = np.pad(board, pad, 'constant', constant_values=9)
+
+        x = state.position[0] + pad
+        xn = x - pad
+        xp = x + pad + 1
+
+        y = state.position[1] + pad
+        yn = y - pad
+        yp = y + pad + 1
+
+        direction = board[x, y]
+        l_board = np.rot90(board[xn:xp, yn:yp], direction)
+        f_board = l_board.flatten()
+        f_board = np.where(f_board > 0, 9, f_board)
+
+        pred = self.clf.predict([f_board])
+
+        choice = ACTIONS[pred[0]]
+
+        return {"move": choice}

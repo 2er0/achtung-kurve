@@ -1,10 +1,11 @@
 import abc
 import os.path
+import time
 import pickle
 from typing import Optional
 
 import numpy as np
-from sklearn import tree
+from sklearn import tree, naive_bayes
 
 from utils import State, ACTIONS, ACTIONSCALC, SaveState, ACTIONHOT
 
@@ -17,9 +18,27 @@ class Agent(metaclass=abc.ABCMeta):
 
 
 def _new_Tree():
-    return tree.DecisionTreeClassifier(
-        criterion="entropy", splitter="random", max_leaf_nodes=768
-    )
+    return naive_bayes.BernoulliNB()
+
+    # [T:12..13{w-201|l-41}..15{w-201|l-88}..17{w201|l-58}]
+    # [D:14{w-201|l-98}..T:18{w-58|l-201}]
+
+    # return tree.DecisionTreeClassifier(
+    #    criterion="entropy", splitter="random", max_leaf_nodes=128, max_depth=8
+    # )
+
+    # [0 .. 11, T:11..16{w-88|l-201}]
+
+    # 19
+    # Training: Starting round 202
+    # Training: Wins: [137, 50]
+    # Battle: Starting round 202
+    # Battle: Wins: [170, 28]
+    # 20 based on 19 (200 rounds)
+    # Training: Starting round 802
+    # Training: Wins: [356, 382]
+    # Battle: Starting round 202
+    # Battle: Wins: [55, 125]
 
 
 class BaumMlAgent(Agent):
@@ -38,6 +57,10 @@ class BaumMlAgent(Agent):
     pad = 3
 
     def __init__(self):
+        load = True
+        agent = 75
+        self.battle = True
+
         print("Init client ...")
         folders = 0
         for _, dir_names, _ in os.walk('agent'):
@@ -45,43 +68,9 @@ class BaumMlAgent(Agent):
             break
         self.dir_name = str(folders)
 
-        if not os.path.exists("agent/" + self.dir_name):
+        if not self.battle and not os.path.exists("agent/" + self.dir_name):
             os.makedirs("agent/" + self.dir_name)
 
-        """
-        if not os.path.isfile("dt_3.pkl"):
-            exit(1)
-        print("Load base model ...")
-        self.clf = joblib.load('dt_3.pkl')
-        """
-
-        """
-        print("Generate base data for future trainings ...")
-        examples = 2
-        for filename in os.listdir("training"):
-            with open("training/" + filename, "rb") as fp:  # Unpickling
-                data = pickle.load(fp)
-
-                collect = [0, 0, 0]
-
-                for cont in data:
-                    if not cont.result:
-                        continue
-
-                    lab = ACTIONHOT[cont.action]
-                    collect[lab] += 1
-
-                    if collect[lab] < examples:
-                        board = np.asarray(cont.board).flatten()
-                        board = np.where(board > 0, 9, board)
-
-                        self.hist_board.append(board)
-                        self.hist_labels.append(lab)
-
-                    if all(i >= examples for i in collect):
-                        break
-        """
-        load = True
         if not load:
             print("Generate new agent ...")
             # random.seed(42)
@@ -99,8 +88,7 @@ class BaumMlAgent(Agent):
             self.clf = self.clf.fit(self.short_mem_board, self.short_mem_labels)
         else:
             print("Load agent from FS ...")
-            agent = 1
-            with open("agent/"+str(agent)+"/agent.pkl", "rb") as fp:
+            with open("agent/" + str(agent) + "/agent.pkl", "rb") as fp:
                 other = pickle.load(fp)
                 self.__apply_past(other)
 
@@ -111,6 +99,8 @@ class BaumMlAgent(Agent):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         # joblib.dump(self, 'agent.pkl')
+        if self.battle:
+            return
         with open("agent/" + self.dir_name + "/agent.pkl", "wb") as fp:  # Pickling
             pickle.dump(self, fp)
         return
@@ -126,11 +116,13 @@ class BaumMlAgent(Agent):
             print(f"Game Over ... win's: {state.wins} | losses: {state.losses}")
             print(f"I'm dead :( - Version {self.active}\n")
             print("I'm training ...")
-            self.__train_tree()
+            if not self.battle:
+                self.__train_tree()
             self.__save_history()
             print("\n=============================================")
             print(f"I'm running on Version {self.active} now")
             print("=============================================\n")
+            #time.sleep(1)
 
         if not state.alive:
             return None
@@ -223,7 +215,7 @@ class BaumMlAgent(Agent):
                 clf_new_count += 1
 
         print(f"Version {self.active} -> {clf_old_count} vs {clf_new_count} <- Version {self.current}")
-        if clf_new_count >= clf_old_count:
+        if clf_new_count > clf_old_count:
             self.active = self.current
             self.clf = clf_new
 

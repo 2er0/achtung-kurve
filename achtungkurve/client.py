@@ -3,7 +3,7 @@ import json
 import threading
 from json import JSONDecodeError
 
-from achtungkurve.agent import Agent, RandomAgent, AvoidsWallsAgent, AvoidsWallsRandomlyAgent
+from achtungkurve.agent import Agent, RandomAgent, AvoidsWallsAgent, AvoidsWallsRandomlyAgent, BaumAgent
 from achtungkurve.server import SERVER_PORT
 
 
@@ -65,10 +65,11 @@ class AgentProtocol(asyncio.Protocol):
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
-    agent = AvoidsWallsRandomlyAgent()
+    agent = BaumAgent()
 
     coro = loop.create_connection(lambda: AgentProtocol(agent, loop),
-                                  'localhost', SERVER_PORT)
+                                  #'localhost', SERVER_PORT)
+                                  'astra.dbaumi.at', 44480)
     loop.run_until_complete(coro)
     loop.run_forever()
     loop.close()
