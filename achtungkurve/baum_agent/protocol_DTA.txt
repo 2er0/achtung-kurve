@@ -1,0 +1,116 @@
+DT s.p.
+---------------------------------
+#22
+Training: win's: 34 | losses: 54
+Battle: win's: 52 | losses: 35
+
+#23
+Training: win's: 47 | losses: 43
+Battle: win's: 54 | losses: 29
+
+#24
+Training: win's: 59 | losses: 33
+Battle: win's: 58 | losses: 25
+
+#25
+Training: win's: 59 | losses: 35
+Battle: win's: 47 | losses: 43
+
+#26
+Training: win's: 57 | losses: 32
+Battle: win's: 51 | losses: 37
+
+#27
+Training: win's: 49 | losses: 45
+Battle: win's: 68 | losses: 21
+
+#28
+Training: win's: 62 | losses: 34
+Battle: win's: 52 | losses: 38
+
+#29
+Training: win's: 63 | losses: 30
+Battle: win's: 55 | losses: 39
+
+#30
+Training: win's: 64 | losses: 28
+Battle: win's: 61 | losses: 31
+
+#31
+Training: win's: 58 | losses: 31
+Battle: win's: 51 | losses: 37
+
+#32
+Training: win's: 70 | losses: 25
+Battle: win's: 63 | losses: 26
+
+#33
+Training: win's: 64 | losses: 25
+Battle: win's: 51 | losses: 37
+
+Battle_200_Random: win's: 116 | losses: 68
+Battle_200_DTmp: win's: 57 | losses: 126
+Battle_200_NBsp: win's: 98 | losses: 77
+Battle_200_NBmp: win's: 34 | losses: 150
+
+===================================
+
+DT m.p.
+---------------------------------
+#34
+Training: 10 alone
+
+Phase 2
+#35
+Training: win's: 40 | losses: 34
+Battle: win's: 70 | losses: 13
+
+#36
+Training: win's: 52 | losses: 37
+Battle: win's: 53 | losses: 33
+
+#37
+Training: win's: 55 | losses: 36
+Battle: win's: 54 | losses: 29
+
+#38
+Training: win's: 61 | losses: 33
+Battle: win's: 70 | losses: 18
+
+#39
+Training: win's: 72 | losses: 20
+Battle: win's: 61 | losses: 23
+
+#40
+Training: win's: 61 | losses: 23
+Battle: win's: 55 | losses: 32
+
+#41
+Training: win's: 68 | losses: 21
+Battle: win's: 65 | losses: 27
+
+#42
+Training: win's: 66 | losses: 17
+Battle: win's: 59 | losses: 28
+
+Phase 3 vs #33 DT s.p.
+#43
+Training: win's: 63 | losses: 27
+Battle: win's: 67 | losses: 21
+
+#44
+Training: win's: 70 | losses: 15
+Battle: win's: 64 | losses: 18
+
+#45
+Training: win's: 52 | losses: 27
+Battle: win's: 57 | losses: 30
+
+#46
+Training: win's: 57 | losses: 35
+
+Battle: win's: 67 | losses: 27
+Battle_200_DTsp: win's: 126 | losses: 57
+Battle_200_Random: win's: 127 | losses: 57
+Battle_200_NBsp: win's: 34 | losses: 109
+Battle_200_NBmp: win's: 40 | losses: 154

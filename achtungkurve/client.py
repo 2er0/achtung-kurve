@@ -3,7 +3,7 @@ import json
 import threading
 from json import JSONDecodeError
 
-from achtungkurve.agent import Agent, RandomAgent, AvoidsWallsAgent, AvoidsWallsRandomlyAgent
+from achtungkurve.agent import Agent, RandomAgent, AvoidsWallsAgent, AvoidsWallsRandomlyAgent, BaumAgent
 from achtungkurve.server import SERVER_PORT
 
 
@@ -68,7 +68,7 @@ if __name__ == "__main__":
     agent = AvoidsWallsRandomlyAgent()
 
     coro = loop.create_connection(lambda: AgentProtocol(agent, loop),
-                                  'astra.dbaumi.at', 44480)
+                                  'localhost', SERVER_PORT)
     loop.run_until_complete(coro)
     loop.run_forever()
     loop.close()
