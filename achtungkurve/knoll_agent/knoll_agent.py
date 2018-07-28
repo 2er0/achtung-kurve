@@ -10,6 +10,9 @@ import random
 import dill as pickle
 import sys
 import time
+import traceback
+
+#sample usage: python knoll_agent.py 3 True True 5
 
 expanded_view = sys.argv[2] == 'True'
 opponent_positions = sys.argv[3] == 'True'
@@ -27,13 +30,15 @@ def prog3(out1, out2, out3):
 
 def if_then_else(condition, out1, out2):
     return out1 if condition else out2
-
+    
+#definition of classes necessary since bool being instance of int breaks the tree's typings
 class MyBool:
     pass
 
 class MyInt:
     pass
 
+#first basic inputs:
 #pset = gp.PrimitiveSetTyped("main", [bool, bool, bool], Direction)
 minimum = [MyBool, MyInt]*7
 if expanded_view:
@@ -103,7 +108,8 @@ def evaluate_agent(individual, cons=1):
         except AttributeError:
             individual.won = int(agents[0].won)
             individual.played = 1
-        return (agents[0].won + agents[0].tiles_claimed/(agents[0].board_sum+1) + 0.1/(individual.height+10),)
+        
+        return (agents[0].won + agents[0].tiles_claimed/(agents[0].board_sum + 1e-10) + 0.1*agents[0].tiles_claimed/(agents[0].board_size + 1e-10),)
 
 def invalidation_decorator(func):
     def wrapper(*args, **kargs):
@@ -139,7 +145,6 @@ def selSelfPlay(individuals, k):
             else:
                 winners = [winner for winner in winners if winner[0].tiles_claimed >= winners[0][0].tiles_claimed]
                 winner = min(winners, key=lambda a: a[1].height)
-        #print(winner[0].won, winner[0].tiles_claimed, winner[1].height, winner[1])
         chosen.append(winner[1])
     return chosen
 
@@ -151,13 +156,14 @@ if __name__ == "__main__":
     cons = int(sys.argv[1])
     
     gens = 10
-    repetitions = 20
-    pop = toolbox.population(n=5+cons-5%cons)
-    #uniform_ratios = (0.2, 0.5)
-    insert_ratios = (0.2, 0.5)
-    replacement_ratios = (0.2, 0.5)
-    optimize_ratios = (0.2, 0.5)
-    shrink_ratios = (0.2, 0.2)
+    repetitions = 10
+    popsize = 100
+    pop = toolbox.population(n=popsize+cons-popsize%cons)
+    uniform_ratios = (0.5, 0.5)
+    insert_ratios = (0.5, 0.5)
+    replacement_ratios = (0.5, 0.5)
+    optimize_ratios = (0.5, 0.5)
+    shrink_ratios = (0.5, 0.5)
     
     def adapt_and_train():
         if len(agents) > 1:
@@ -171,9 +177,9 @@ if __name__ == "__main__":
             del ind.fitness.values
         for i in range(repetitions):
             print(i)
-            #toolbox.register("mutate", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
-            #toolbox.decorate("mutate", gp.staticLimit(operator.attrgetter("height"), 50))
-            #algorithms.eaSimple(pop, toolbox, *uniform_ratios, gens, stats, verbose=True)
+            toolbox.register("mutate", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
+            toolbox.decorate("mutate", gp.staticLimit(operator.attrgetter("height"), 25))
+            algorithms.eaSimple(pop, toolbox, *uniform_ratios, gens, stats, verbose=True)
             toolbox.register("mutate", gp.mutInsert, pset=pset)
             toolbox.decorate("mutate", gp.staticLimit(operator.attrgetter("height"), 25))
             algorithms.eaSimple(pop, toolbox, *insert_ratios, gens, stats, verbose=True)
@@ -200,6 +206,7 @@ if __name__ == "__main__":
     stats.register("min_h", lambda p: np.min([s[1] for s in p]))
     stats.register("max_h", lambda p: np.max([s[1] for s in p]))
     
+    #agent plays alone
     #agents = [TreeAgent(expanded_view, opponent_positions, memory)]
     #loop = asyncio.new_event_loop()
     #coros = [loop.create_connection(lambda a=agent: TronGame(a, loop),'localhost', '15554') for agent in agents]
@@ -207,17 +214,23 @@ if __name__ == "__main__":
     #for coro in coros:
     #    t_n_p.append(loop.run_until_complete(coro))
     #adapt_and_train()
+    #for transport, protocol in t_n_p:
+    #    transport.write_eof()
     #loop.close()
     
-    agents = [TreeAgent(expanded_view, opponent_positions, memory)]
-    loop = asyncio.new_event_loop()
-    coros = [loop.create_connection(lambda a=agent: TronGame(a, loop),'localhost', '15555') for agent in agents]
-    t_n_p = []
-    for coro in coros:
-        t_n_p.append(loop.run_until_complete(coro))
-    adapt_and_train()
-    loop.close()
+    #agent vs. RandomAvoidsWall
+    #agents = [TreeAgent(expanded_view, opponent_positions, memory)]
+    #loop = asyncio.new_event_loop()
+    #coros = [loop.create_connection(lambda a=agent: TronGame(a, loop),'localhost', '15555') for agent in agents]
+    #t_n_p = []
+    #for coro in coros:
+    #    t_n_p.append(loop.run_until_complete(coro))
+    #adapt_and_train()
+    #for transport, protocol in t_n_p:
+    #    transport.write_eof()
+    #loop.close()
         
+    different individuals against each other
     agents = [TreeAgent(expanded_view, opponent_positions, memory) for i in range(cons)]
     loop = asyncio.new_event_loop()
     coros = [loop.create_connection(lambda a=agent: TronGame(a, loop),'localhost', '15556') for agent in agents]
@@ -225,42 +238,46 @@ if __name__ == "__main__":
     for coro in coros:
         t_n_p.append(loop.run_until_complete(coro))
     adapt_and_train()
+    for transport, protocol in t_n_p:
+        transport.write_eof()
     loop.close()
-            
+    
     sorted_pop = sorted(pop, key=lambda ind: ind.fitness, reverse=True)
     agents[0].agent_logic = gp.compile(sorted_pop[0], pset)
     with open(f'best_individual_{expanded_view}_{opponent_positions}_{memory}.pkl', 'wb') as out_:
         pickle.dump(agents[0], out_, pickle.HIGHEST_PROTOCOL)
-    with open(f'best_individual_{expanded_view}_{opponent_positions}_{memory}_agent_n_pop.pkl', 'wb') as out_:
-        pickle.dump({"agent":agents[0], "pop":pop}, out_, pickle.HIGHEST_PROTOCOL)
+        
+    with open(f'best_individual_{expanded_view}_{opponent_positions}_{memory}_online.pkl', 'wb') as out_:
+        pickle.dump(agents[0], out_, pickle.HIGHEST_PROTOCOL)
         
     print('all pickled up and ready to go!')
+    input('press key to start online learning')
     
-    
-    while False:
+    while True:
         try:
             repetitions = 1
+            #agent vs other GP agents, RL agents, etc.
             agents = [TreeAgent(expanded_view, opponent_positions, memory)]
             loop = asyncio.new_event_loop()
-            coros = [loop.create_connection(lambda a=agent: TronGame(agent, loop, print_state=True),'astra.dbaumi.at', '44480') for agent in agents]
+            coros = [loop.create_connection(lambda a=agent: TronGame(agent, loop, print_state=True),'localhost', '15555') for agent in agents]
             t_n_p = []
             for coro in coros:
                 t_n_p.append(loop.run_until_complete(coro))
                 
             adapt_and_train()
             
+            for transport, protocol in t_n_p:
+                transport.write_eof()
             loop.close()
             
             sorted_pop = sorted(pop, key=lambda ind: ind.fitness, reverse=True)
             agents[0].agent_logic = gp.compile(sorted_pop[0], pset)
             with open(f'best_individual_{expanded_view}_{opponent_positions}_{memory}_online.pkl', 'wb') as out_:
                 pickle.dump(agents[0], out_, pickle.HIGHEST_PROTOCOL)
-            #with open(f'best_individual_{expanded_view}_{opponent_positions}_{memory}_online_agent_n_pop.pkl', 'wb') as out_:
-            #    pickle.dump({"agent":agents[0], "pop":pop}, out_, pickle.HIGHEST_PROTOCOL)
                 
             print('all pickled up and ready to go!')
             time.sleep(5)
         except KeyboardInterrupt:
             raise
         except:
-            pass
+            traceback.print_exc()

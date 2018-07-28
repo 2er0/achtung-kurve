@@ -28,6 +28,7 @@ class TreeAgent(Agent):
             return None
 
         board = np.array(state["board"])[1:-1,1:-1]
+        self.board_size = len(board)*len(board[0])
         self.board_sum = np.sum((board!=0).astype(int))
         self.tiles_claimed = self.tiles_claimed + 1
         
