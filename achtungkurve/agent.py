@@ -121,7 +121,7 @@ class BaumAgent(Agent):
     pad = 2
 
     def __init__(self):
-        agent = 33
+        agent = 17
         print(f'BaumAgent: #{agent}')
         with open("baum_agent/agent/" + str(agent) + "/agent.pkl", "rb") as fp:
             other = pickle.load(fp)
@@ -132,7 +132,9 @@ class BaumAgent(Agent):
 
     def next_move(self, state) -> Optional[dict]:
 
-        if state['game_over']:
+        state = State(**state)
+
+        if state.game_over:
             print(f'round {self.count} ended')
             print(f"Game Over ... win's: {state.wins} | losses: {state.losses}")
             self.count += 1
@@ -140,10 +142,8 @@ class BaumAgent(Agent):
             if self.count > 200:
                 exit(0)
 
-        if not state["alive"]:
+        if not state.alive:
             return None
-
-        state = State(**state)
 
         pad = self.pad
         board = np.asarray(state.board, dtype=np.int)
