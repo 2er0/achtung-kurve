@@ -61,12 +61,17 @@ def start_tron_server(tron_game: TronGame):
 
 if __name__ == "__main__":
     players = 1
+    last_player_ends_game = True
     if len(sys.argv) > 1:
         players = int(sys.argv[1])
+    if len(sys.argv) > 2:
+        SERVER_PORT = int(sys.argv[2])
+    if len(sys.argv) > 3:
+        last_player_ends_game = sys.argv[3] == "True"
         
     loop = asyncio.get_event_loop()
 
     tron = TronGame(num_players=players, board_size=lambda: random.randint(5,10)+5*players,
-                    timeout=10, polling_rate=4, verbose=True, last_player_ends_game=True)
+                    timeout=10, polling_rate=0, verbose=True, last_player_ends_game=last_player_ends_game)
 
     start_tron_server(tron)

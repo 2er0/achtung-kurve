@@ -3,7 +3,7 @@ import json
 import threading
 from json import JSONDecodeError
 
-from achtungkurve.agent import Agent, RandomAgent, AvoidsWallsAgent, AvoidsWallsRandomlyAgent
+from achtungkurve.agent import Agent, RandomAgent, AvoidsWallsAgent, AvoidsWallsRandomlyAgent, BaumAgent
 from achtungkurve.server import SERVER_PORT
 
 
